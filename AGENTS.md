@@ -18,8 +18,13 @@ Every skill lives in `.agents/skills/<skill-name>/SKILL.md`.
 | `sound-effects` | Quick measured sound pass for a motion-graphics video: cue list, beat grid checked against the kicks, one real CC0 sound per cue from a bundled 110-sound kit, mix to -16 LUFS, swap report and credits. From [Barty-Bart/motion-graphics](https://github.com/Barty-Bart/motion-graphics). Script: `.agents/skills/sound-effects/scripts/sound_pass.py` |
 | `real-sfx` | Sound design with real recordings from your own sound libraries: finds the moments (cue list, synth script, HyperFrames timeline, screen recording or the picture), places each sound on the frame at the original level, swaps out synthesized sound instead of doubling it, keeps music and voice, returns MP4 + SFX track + critique. Libraries: `sound-effects`' CC0 recordings + uisfx; add your own with `scripts/setup.py add-library`. By Clipwing. |
 | `onetake` | Short product launch films, teasers and feature demos (10–60 s) as one continuous take: one HTML composition on a library of measured moves, rendered with real motion blur (1080p30 drafts, 4K60 finals) and checked by an oracle that fails a slideshow. From [feitangyuan/onetake](https://github.com/feitangyuan/onetake). **Noncommercial use only** (PolyForm Noncommercial). |
+| `sfx-cloud` | The main sound library, in a private Cloudflare R2 bucket (`sfx-r2:soundeffects`): Sonniss GDC 2024 + 2026, every sound described (catalog + sidecar JSON). Search by words, mount read-only at `~/Music/SFX/cloud` (sounds download on first use, 10 GB cache), let `real-sfx` pick from it, add new packs. Command: `sfx-cloud` |
 
 ## Sound effects library
+
+The big library (Sonniss GDC bundles, real recordings) is in Cloudflare R2, not on this Mac: use the `sfx-cloud`
+skill (`sfx-cloud search ...`, `sfx-cloud mount`). Sonniss licence: media production only, no redistribution, no AI
+training, so the bucket stays private. The R2 token is entered once per Mac by the user: `./scripts/r2-connect.sh`.
 
 All 252 earshot sound effects (whooshes, hits, risers, pops, clicks, drips, bells, keys and more) are rendered as WAVs
 in `~/Music/SFX/earshot/<category>/<member>.wav`, listed in `~/Music/SFX/earshot/INDEX.md`. It lives outside this repo

@@ -10,7 +10,8 @@ description: Sound design for motion videos with REAL recorded sounds from the u
 > onnxruntime and the YAMNet model already installed; there is no `python` command and the system `python3` is 3.9).
 > Start every shell command with `export PATH="/opt/homebrew/opt/ffmpeg-full/bin:$PATH";`: the plain Homebrew ffmpeg
 > has no `drawtext`, and the frame sheets fail without it. Libraries: `sound_effects` (the 109 real CC0 recordings of
-> the `sound-effects` skill) plus uisfx. Do NOT add `~/Music/SFX/earshot`: those sounds are made in code. If no
+> the `sound-effects` skill), uisfx, and the cloud collections (Sonniss GDC, in Cloudflare R2): run `sfx-cloud mount`
+> before any command here so their paths under `~/Music/SFX/cloud` resolve (see the `sfx-cloud` skill). Do NOT add `~/Music/SFX/earshot`: those sounds are made in code. If no
 > fitting sound exists, say so and suggest the user adds a real library (`setup.py add-library NAME PATH --index`).
 > `hear.py` (3.1 GB audio-language model) is not installed; ask before installing it. Put work folders in the
 > VideoEditing repo's `downloads/` or the user's project. Related: `real-sound` (sources new recordings online),

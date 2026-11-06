@@ -98,7 +98,24 @@ RSFX_INDEX=$([ -f "$RSFX/library_index.json" ] || echo --index)
 PATH="/opt/homebrew/opt/ffmpeg-full/bin:$PATH" "$RSFX/vendor/venv/bin/python" "$RSFX/scripts/setup.py" \
   add-library sound_effects "$SFX_SKILL/sfx" --tier main $RSFX_INDEX >/dev/null
 
-# 10. Make this repo's other skills work in any folder on this Mac
+# 10. sfx-cloud: the sound library in your private Cloudflare R2 bucket (rclone + the `sfx-cloud` command).
+#     The R2 token is yours to enter, once per Mac: ./scripts/r2-connect.sh
+if [ -x /opt/homebrew/bin/brew ]; then
+  /opt/homebrew/bin/brew list rclone >/dev/null 2>&1 || /opt/homebrew/bin/brew install rclone
+  ln -sf /opt/homebrew/bin/rclone "$HOME/.local/bin/rclone"
+fi
+cat > "$HOME/.local/bin/sfx-cloud" <<EOF
+#!/bin/bash
+exec "$RSFX/vendor/venv/bin/python" "$REPO/.agents/skills/sfx-cloud/scripts/sfx_cloud.py" "\$@"
+EOF
+chmod +x "$HOME/.local/bin/sfx-cloud"
+if rclone listremotes 2>/dev/null | grep -qx 'sfx-r2:'; then
+  sfx-cloud mount >/dev/null && { sfx-cloud link-real-sfx >/dev/null 2>&1 || true; }
+else
+  echo "sfx-cloud: not connected to R2 yet. Run ./scripts/r2-connect.sh"
+fi
+
+# 11. Make this repo's other skills work in any folder on this Mac
 #    (~/.agents/skills is read by Codex and others, ~/.claude/skills by Claude Code)
 for skill in "$REPO"/.agents/skills/*/; do
   name="$(basename "$skill")"
