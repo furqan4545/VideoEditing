@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "voicestudio": {
+      "type": "http",
+      "url": "http://localhost:3900/mcp"
+    },
+    "earshot": {
+      "command": "${HOME}/.local/share/earshot/.venv/bin/python",
+      "args": ["-m", "earshot", "mcp"],
+      "env": { "EARSHOT_THREADS": "3" }
+    }
+  }
+}

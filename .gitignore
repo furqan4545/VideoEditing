@@ -10,3 +10,17 @@ downloads/
 *.m4a
 *.mp3
 *.wav
+# includes the sound-effects skill's CC0 sounds: setup.sh fetches them
+*.ogg
+
+# real-sfx: per-Mac files made by setup.sh (UI sounds, venv, model, config and index with local paths)
+.agents/skills/real-sfx/vendor/node_modules/
+.agents/skills/real-sfx/vendor/venv*/
+.agents/skills/real-sfx/vendor/models/
+.agents/skills/real-sfx/config.json
+.agents/skills/real-sfx/library_index.json
+.agents/skills/real-sfx/library_embeddings.*
+.agents/skills/real-sfx/ambience_steady.json
+
+# Local helper scripts
+.local/
