@@ -1,0 +1,12 @@
+.DS_Store
+
+# Media stays out of git (GitHub rejects files over 100 MB)
+downloads/
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+*.m4a
+*.mp3
+*.wav
