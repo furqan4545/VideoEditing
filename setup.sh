@@ -115,7 +115,27 @@ else
   echo "sfx-cloud: not connected to R2 yet. Run ./scripts/r2-connect.sh"
 fi
 
-# 11. Make this repo's other skills work in any folder on this Mac
+# 11. HyperFrames: write HTML, render it to MP4 (heygen-com/hyperframes, Apache-2.0).
+#     The CLI version matches the four skills copied into .agents/skills (hyperframes, hyperframes-cli,
+#     hyperframes-registry, media-use, from tag v$HF_VERSION). To update, change HF_VERSION, re-copy those four
+#     folders from the new tag (keep hyperframes/SKILL.md's "On this Mac" note and hyperframes/LICENSE), and rerun.
+#     HYPERFRAMES_SKIP_SKILLS=1 stops the CLI installing its own skill copies.
+#     Also fetches the Chrome Headless Shell it renders with (~150 MB, in ~/.cache/hyperframes).
+HF_VERSION=0.9.19
+export HYPERFRAMES_SKIP_SKILLS=1
+if [ -x /opt/homebrew/bin/npm ]; then
+  [ "$(/opt/homebrew/bin/hyperframes --version 2>/dev/null)" = "$HF_VERSION" ] ||
+    /opt/homebrew/bin/npm install -g --no-audit --no-fund "hyperframes@$HF_VERSION" >/dev/null
+  ln -sf /opt/homebrew/bin/hyperframes "$HOME/.local/bin/hyperframes"
+  HYPERFRAMES_NO_TELEMETRY=1 hyperframes telemetry disable >/dev/null  # usage telemetry off (stored in ~/.hyperframes)
+  hyperframes browser ensure >/dev/null
+  # media-use's 19 bundled sounds are media, so git ignores them; the npm package ships the same files
+  MU_SFX="$REPO/.agents/skills/media-use/audio/assets/sfx"
+  [ -f "$MU_SFX/whoosh.mp3" ] ||
+    cp /opt/homebrew/lib/node_modules/hyperframes/dist/skills/media-use/audio/assets/sfx/*.mp3 "$MU_SFX/"
+fi
+
+# 12. Make this repo's other skills work in any folder on this Mac
 #    (~/.agents/skills is read by Codex and others, ~/.claude/skills by Claude Code)
 for skill in "$REPO"/.agents/skills/*/; do
   name="$(basename "$skill")"
