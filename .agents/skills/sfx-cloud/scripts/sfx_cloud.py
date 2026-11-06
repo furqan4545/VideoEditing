@@ -5,6 +5,7 @@ Layout of the bucket (default sfx-r2:soundeffects):
   sounds/<collection>/<path>.wav          the recordings, as they came
   sounds/<collection>/<path>.wav.json     what that sound is (one sidecar per sound)
   catalog/catalog.jsonl                   every sidecar, one per line (what `search` reads)
+  catalog/parts/<collection>.jsonl        the same, per collection (catalog.jsonl is rebuilt from these)
   catalog/real-sfx/<collection>.index.json        real-sfx measurements + tags, paths relative to the bucket root
   catalog/real-sfx/<collection>.embeddings.bin    real-sfx YAMNet embeddings (float32 x 1024 per path)
   catalog/real-sfx/<collection>.embeddings.json   their paths, relative to the bucket root
@@ -15,12 +16,16 @@ sounds as plain files; a sound is downloaded on first read and kept in a capped 
   sfx-cloud status                        connection, mount, cache, collections
   sfx-cloud mount | unmount
   sfx-cloud search WORDS [--role R] [--max-dur S] [--min-dur S] [--collection C] [--limit N] [--json]
+  sfx-cloud path ID [ID ...]              readable file paths for catalog IDs (mounts first): use them anywhere
   sfx-cloud get ID [ID ...] --to DIR      copy sounds out of the bucket into DIR (no mount needed)
+  sfx-cloud place VIDEO --out OUT --cue SECONDS ID [GAIN_DB] [--cue ...]   drop sounds in at exact times
   sfx-cloud ingest SRC [SRC ...] --collection NAME --source TEXT --license TEXT [--license-url URL]
                                           SRC = zip files or folders; unpacks, describes, uploads, verifies
   sfx-cloud link-real-sfx                 make real-sfx pick from the cloud collections (no audio is downloaded)
   sfx-cloud cleanup --collection NAME     after a verified upload: move the local staging copy to the Trash
   sfx-cloud cache-clear                   empty the local read cache
+  sfx-cloud rebuild-catalog               catalog/catalog.jsonl again from catalog/parts/*.jsonl
+  sfx-cloud upload --collection NAME      carry on an ingest whose upload stopped (no re-measuring)
 """
 import argparse
 import array
@@ -91,7 +96,9 @@ def mount(quiet=False):
     LOG.parent.mkdir(parents=True, exist_ok=True)
     cmd = ["rclone", "nfsmount", rb(), str(MOUNT), "--read-only", "--vfs-cache-mode", "full",
            "--vfs-cache-max-size", CACHE_MAX, "--vfs-cache-max-age", "2160h", "--cache-dir", str(CACHE / "vfs"),
-           "--dir-cache-time", "1h", "--daemon", "--daemon-wait", "20s", "--log-file", str(LOG),
+           "--dir-cache-time", "1h", "--vfs-refresh", "--fast-list",
+           # long ambiences start at once: fetch small chunks first, growing while a file is read through
+           "--vfs-read-chunk-size", "4M", "--vfs-read-chunk-size-limit", "128M", "--buffer-size", "4M", "--daemon", "--daemon-wait", "20s", "--log-file", str(LOG),
            "--log-level", "NOTICE"]
     # the daemon keeps stdout/stderr open: never a pipe here, or this call waits forever
     r = subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -114,14 +121,26 @@ def unmount():
 
 # ------------------------------------------------------------------ catalog
 def read_catalog():
-    """Every sidecar in the bucket, from the mount when it is there, else straight from R2."""
-    p = MOUNT / "catalog/catalog.jsonl"
-    if mounted() and p.exists():
-        text = p.read_text(encoding="utf-8")
-    else:
-        need_rclone()
-        r = run(["rclone", "cat", rb("catalog/catalog.jsonl")], check=False)
-        text = r.stdout if r.returncode == 0 else ""
+    """Every sidecar in the bucket. Read from R2 itself (the mount may hold an older listing for a few minutes) and
+    kept in a local copy that is fetched again only when the bucket's catalog changed (size or time)."""
+    need_rclone()
+    local, meta = CACHE / "catalog.jsonl", CACHE / "catalog.meta.json"
+    r = run(["rclone", "lsjson", rb("catalog/catalog.jsonl")], check=False)
+    try:
+        info = json.loads(r.stdout)[0] if r.returncode == 0 else None
+    except (json.JSONDecodeError, IndexError):
+        info = None
+    if info is None:                                    # offline: the last copy is better than nothing
+        text = local.read_text(encoding="utf-8") if local.exists() else ""
+        if text:
+            print("note: offline, using the last catalog copy", file=sys.stderr)
+        return [json.loads(line) for line in text.splitlines() if line.strip()]
+    stamp = {"size": info.get("Size"), "time": info.get("ModTime")}
+    if not (local.exists() and meta.exists() and json.loads(meta.read_text()) == stamp):
+        CACHE.mkdir(parents=True, exist_ok=True)
+        run(["rclone", "copyto", rb("catalog/catalog.jsonl"), local])
+        meta.write_text(json.dumps(stamp))
+    text = local.read_text(encoding="utf-8")
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
 
@@ -155,13 +174,83 @@ def search(a):
         hits.append((score, r))
     hits.sort(key=lambda x: (-x[0], x[1].get("duration") or 0))
     hits = hits[:a.limit]
+    live = ensure_mounted()                  # so every path printed below can be used right away
     if a.json:
         print(json.dumps([dict(r, local_path=str(MOUNT / r["key"])) for _, r in hits], ensure_ascii=False, indent=1))
         return
     for s, r in hits:
         print(f"{s:5.1f}  {r.get('duration', 0):6.2f}s  {r.get('role', ''):9s} {r['id']}\n"
-              f"        {r.get('description', '')[:150]}")
-    print(f"\n{len(hits)} shown. Path on the mount: {MOUNT}/<key> (sfx-cloud mount), or sfx-cloud get ID --to DIR")
+              f"        {r.get('description', '')[:150]}\n"
+              f"        {MOUNT / r['key']}")
+    print(f"\n{len(hits)} shown." + ("" if live else "  (not mounted: use sfx-cloud get ID --to DIR)"))
+
+
+def ensure_mounted():
+    """Mount quietly when the remote is set up; True when the paths under MOUNT can be read."""
+    if mounted():
+        return True
+    if not shutil.which("rclone") or REMOTE + ":" not in run(["rclone", "listremotes"], check=False).stdout.split():
+        return False
+    try:
+        mount(quiet=True)
+    except SystemExit as e:
+        print(f"note: could not mount ({e})", file=sys.stderr)
+    return mounted()
+
+
+def paths(a):
+    """Catalog IDs -> readable paths on the mount (mounting first), one per line."""
+    if not ensure_mounted():
+        sys.exit("cannot mount the bucket: sfx-cloud status")
+    by_id = {r["id"]: r for r in read_catalog()}
+    for i in a.ids:
+        r = by_id.get(i)
+        if not r:
+            sys.exit(f"not in the catalog: {i}")
+        print(MOUNT / r["key"])
+
+
+def place(a):
+    """Drop cloud sounds into a video at given times: the picture is copied as it is, the sounds are mixed over the
+    video's own audio (or make its audio when it has none), then a limiter keeps the peaks safe. For a whole film's
+    sound design use real-sfx (levels per role, anchors, ducking, critique); this is the quick, exact placement."""
+    if not ensure_mounted():
+        sys.exit("cannot mount the bucket: sfx-cloud status")
+    by_id = {r["id"]: r for r in read_catalog()}
+    video = Path(a.video)
+    cues = []
+    for c in a.cue:
+        if len(c) not in (2, 3):
+            sys.exit("--cue takes: SECONDS ID [GAIN_DB]")
+        r = by_id.get(c[1])
+        if not r:
+            sys.exit(f"not in the catalog: {c[1]}")
+        cues.append((float(c[0]), MOUNT / r["key"], float(c[2]) if len(c) == 3 else 0.0, r))
+    pr = run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type:format=duration", "-of", "json", video])
+    info = json.loads(pr.stdout)
+    has_audio = any(st.get("codec_type") == "audio" for st in info.get("streams", []))
+    dur = float(info["format"]["duration"])
+    cmd = ["ffmpeg", "-v", "error", "-y", "-i", video]
+    parts, labels = [], []
+    for i, (t, path, gain, _) in enumerate(cues, start=1):
+        cmd += ["-i", path]
+        ms = max(0, int(round(t * 1000)))
+        parts.append(f"[{i}:a]aresample=48000,aformat=channel_layouts=stereo,volume={gain}dB,adelay={ms}:all=1[s{i}]")
+        labels.append(f"[s{i}]")
+    if has_audio:
+        parts.append("[0:a]aresample=48000,aformat=channel_layouts=stereo[base]")
+        labels.insert(0, "[base]")
+    parts.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:duration=longest,"
+                 f"apad,atrim=0:{dur:.3f},alimiter=limit=0.89:level=false[a]")
+    out = Path(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd += ["-filter_complex", ";".join(parts), "-map", "0:v?", "-map", "[a]", "-c:v", "copy", "-c:a", "aac",
+            "-b:a", "256k", "-t", f"{dur:.3f}", out]
+    run(cmd)
+    for t, path, gain, r in cues:
+        print(f"{t:7.2f}s  {gain:+.1f} dB  {r['id']}  ({r.get('license', '')[:60]})")
+    print(f"wrote {out}  ({'mixed over the original audio' if has_audio else 'no original audio: sounds only'})")
+    print("You cannot hear it: check it with earshot (timeline / critique) and give the user the times to listen to.")
 
 
 def get(a):
@@ -293,20 +382,23 @@ def read_filelists(root):
             z = zipfile.ZipFile(x)
             ss = ["".join(t.itertext()) for t in ET.fromstring(z.read("xl/sharedStrings.xml")).findall("m:si", ns)] \
                 if "xl/sharedStrings.xml" in z.namelist() else []
-            sheet = sorted(n for n in z.namelist() if re.match(r"xl/worksheets/sheet\d+\.xml", n))[0]
-            rows = []
-            for r in ET.fromstring(z.read(sheet)).findall(".//m:row", ns):
-                vals = []
-                for c in r.findall("m:c", ns):
-                    v = c.find("m:v", ns)
-                    vals.append((ss[int(v.text)] if c.get("t") == "s" else v.text) if v is not None
-                                else "".join(c.itertext()))
-                rows.append(vals)
-            head = [h.strip().lower() for h in rows[0]]
-            for r in rows[1:]:
-                d = dict(zip(head, r))
-                if d.get("filename"):
-                    out[unicodedata.normalize("NFC", d["filename"].strip())] = d
+            # every sheet: a bundle's list can carry more than one (2024 has two); names not in the folder are ignored
+            for sheet in sorted(n for n in z.namelist() if re.match(r"xl/worksheets/sheet\d+\.xml", n)):
+                rows = []
+                for r in ET.fromstring(z.read(sheet)).findall(".//m:row", ns):
+                    vals = []
+                    for c in r.findall("m:c", ns):
+                        v = c.find("m:v", ns)
+                        vals.append((ss[int(v.text)] if c.get("t") == "s" else v.text) if v is not None
+                                    else "".join(c.itertext()))
+                    rows.append(vals)
+                if not rows:
+                    continue
+                head = [h.strip().lower() for h in rows[0]]
+                for r in rows[1:]:
+                    d = dict(zip(head, r))
+                    if d.get("filename"):
+                        out.setdefault(unicodedata.normalize("NFC", d["filename"].strip()), d)
         except Exception as e:                          # a broken list only costs its extra words
             print(f"note: could not read {x.name}: {e}")
     return out
@@ -419,11 +511,14 @@ def ingest(a):
         if n % 250 == 0:
             print(f"  {n}/{len(files)}", flush=True)
 
-    # real-sfx snapshot with paths relative to the bucket root
-    out = STAGING / "catalog" / "real-sfx"
+    # this collection's catalog files, in a folder of its own (two ingests at once never mix their files)
+    work = STAGING / f"catalog-{coll}"
+    out = work / "real-sfx"
     out.mkdir(parents=True, exist_ok=True)
+    (work / "parts").mkdir(exist_ok=True)
     pre = str(STAGING) + "/"
-    snap = {"collection": coll, "libraries": idx["libraries"], "sounds": []}
+    # link False: searchable in the catalog, never offered to real-sfx (code-made sounds, packs real-sfx has itself)
+    snap = {"collection": coll, "link": not a.no_real_sfx, "libraries": idx["libraries"], "sounds": []}
     for s in idx["sounds"]:
         s = dict(s, path=s["path"].replace(pre, "", 1))
         snap["sounds"].append(s)
@@ -437,19 +532,75 @@ def ingest(a):
         shutil.copy2(tmp / "library_embeddings.bin", out / f"{coll}.embeddings.bin")
     shutil.rmtree(tmp, ignore_errors=True)
 
-    # merged catalog: the other collections from the bucket + this one
-    others = [r for r in read_catalog() if r.get("collection") != coll]
-    cat = STAGING / "catalog" / "catalog.jsonl"
-    cat.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in others + recs), encoding="utf-8")
+    (work / "parts" / f"{coll}.jsonl").write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in recs), encoding="utf-8")
+    push(coll)
 
+
+# rclone rides out a dropped connection (Wi-Fi blip, DNS gone for a minute) instead of failing the run
+UP = ["rclone", "copy", "--transfers", "6", "--checkers", "16", "--retries", "20", "--retries-sleep", "30s",
+      "--low-level-retries", "30", "--stats", "60s", "--stats-one-line", "-v"]
+
+
+def push(coll):
+    """Upload a staged collection (sounds, sidecars, its catalog part and real-sfx snapshot), rebuild the merged
+    catalog, verify. Safe to repeat: whatever is already in the bucket is skipped."""
+    need_rclone()
+    root = STAGING / "sounds" / coll
+    work = STAGING / f"catalog-{coll}"
+    if not root.is_dir():
+        sys.exit(f"nothing staged for {coll} in {root}: run ingest")
+    (work / "parts").mkdir(parents=True, exist_ok=True)
+    (work / "real-sfx").mkdir(exist_ok=True)
+    part = work / "parts" / f"{coll}.jsonl"
+    if not part.exists():                      # an older run: rebuild the part from the sidecars it left
+        recs = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(root.rglob("*.json"))
+                if Path(p.name[:-5]).suffix.lower() in AUDIO_EXT]
+        part.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in recs), encoding="utf-8")
+    for f in (STAGING / "catalog" / "real-sfx").glob(f"{coll}.*"):
+        if not (work / "real-sfx" / f.name).exists():
+            shutil.copy2(f, work / "real-sfx" / f.name)
     print("uploading the sounds ...", flush=True)
-    up = ["rclone", "copy", "--transfers", "8", "--checkers", "16", "--stats", "30s", "--stats-one-line", "-v"]
-    if subprocess.run(up + [str(root), rb("sounds", coll)]).returncode:
-        sys.exit("upload failed: run the same ingest again, rclone skips what is already there")
+    if subprocess.run(UP + [str(root), rb("sounds", coll)]).returncode:
+        sys.exit(f"upload stopped (connection?): run `sfx-cloud upload --collection {coll}` to carry on")
     print("uploading the catalog ...", flush=True)
-    if subprocess.run(up + [str(STAGING / "catalog"), rb("catalog")]).returncode:
-        sys.exit("catalog upload failed: run the same ingest again")
+    if subprocess.run(UP + [str(work), rb("catalog")]).returncode:
+        sys.exit(f"catalog upload stopped: run `sfx-cloud upload --collection {coll}` again")
+    rebuild_catalog()
     verify(coll)
+    if mounted():                                   # show the new sounds on the mount now, not in an hour
+        unmount()
+        mount()
+
+
+def rebuild_catalog():
+    """catalog/catalog.jsonl = every catalog/parts/<collection>.jsonl in the bucket. A collection that is only in the
+    old merged catalog gets its part written first, so nothing is ever dropped."""
+    need_rclone()
+    work = Path(tempfile.mkdtemp(prefix="sfxcloud_cat_"))
+    try:
+        parts = {Path(x).stem for x in run(["rclone", "lsf", rb("catalog/parts")], check=False).stdout.split()
+                 if x.endswith(".jsonl")}
+        old = run(["rclone", "cat", rb("catalog/catalog.jsonl")], check=False)
+        orphans = {}
+        for line in (old.stdout if old.returncode == 0 else "").splitlines():
+            if line.strip():
+                r = json.loads(line)
+                if r.get("collection") not in parts:
+                    orphans.setdefault(r.get("collection"), []).append(line)
+        for c, lines in orphans.items():
+            (work / f"{c}.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            run(["rclone", "copyto", work / f"{c}.jsonl", rb("catalog/parts", f"{c}.jsonl")])
+            parts.add(c)
+        text = ""
+        for c in sorted(parts):
+            t = run(["rclone", "cat", rb("catalog/parts", f"{c}.jsonl")]).stdout
+            text += t if t.endswith("\n") or not t else t + "\n"
+        (work / "catalog.jsonl").write_text(text, encoding="utf-8")
+        run(["rclone", "copyto", work / "catalog.jsonl", rb("catalog/catalog.jsonl")])
+        print(f"catalog: {sum(1 for x in text.splitlines() if x.strip())} sounds in {len(parts)} collections")
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
 
 
 def verify(coll):
@@ -469,7 +620,9 @@ def verify(coll):
 def link_real_sfx(a):
     """Merge the cloud collections into real-sfx's index, embeddings and config (no audio is read)."""
     mount(quiet=True)
-    snaps = sorted((MOUNT / "catalog/real-sfx").glob("*.index.json"))
+    snapdir = Path(tempfile.mkdtemp(prefix="sfxcloud_snap_"))      # straight from R2, never a stale listing
+    run(["rclone", "copy", rb("catalog/real-sfx"), snapdir])
+    snaps = sorted(snapdir.glob("*.index.json"))
     if not snaps:
         sys.exit("no real-sfx snapshots in the bucket yet")
     idx_p, cfg_p = REAL_SFX / "library_index.json", REAL_SFX / "config.json"
@@ -484,6 +637,9 @@ def link_real_sfx(a):
     mroot = str(MOUNT) + "/"
     for sp in snaps:
         snap = json.loads(sp.read_text(encoding="utf-8"))
+        if snap.get("link") is False:
+            print(f"skipped {snap.get('collection')}: catalog only (not for real-sfx)")
+            continue
         names = {lib["name"] for lib in snap["libraries"]}
         idx["sounds"] = [s for s in idx["sounds"] if s.get("library") not in names]
         idx["libraries"] = [x for x in idx["libraries"] if x.get("name") not in names]
@@ -512,6 +668,7 @@ def link_real_sfx(a):
     ej_p.write_text(json.dumps({"dim": DIM, "paths": paths}), encoding="utf-8")
     eb_p.write_bytes(emb.tobytes())
     print(f"real-sfx index: {idx['count']} sounds in {len(idx['libraries'])} libraries")
+    shutil.rmtree(snapdir, ignore_errors=True)
 
 
 def cleanup(a):
@@ -577,6 +734,12 @@ def main():
     g = sub.add_parser("get")
     g.add_argument("ids", nargs="+")
     g.add_argument("--to", required=True)
+    pa = sub.add_parser("path")
+    pa.add_argument("ids", nargs="+")
+    pl = sub.add_parser("place")
+    pl.add_argument("video")
+    pl.add_argument("--out", required=True)
+    pl.add_argument("--cue", nargs="+", action="append", required=True, metavar="SECONDS ID [GAIN_DB]")
     i = sub.add_parser("ingest")
     i.add_argument("src", nargs="+")
     i.add_argument("--collection", required=True)
@@ -584,6 +747,8 @@ def main():
     i.add_argument("--license", required=True)
     i.add_argument("--license-url")
     i.add_argument("--license-notes")
+    i.add_argument("--no-real-sfx", action="store_true",
+                   help="catalog only: never offer these sounds to real-sfx (code-made sounds, its own packs)")
     sub.add_parser("link-real-sfx")
     c = sub.add_parser("cleanup")
     c.add_argument("--collection", required=True)
@@ -591,10 +756,15 @@ def main():
     v = sub.add_parser("verify")
     v.add_argument("--collection", required=True)
     sub.add_parser("cache-clear")
+    sub.add_parser("rebuild-catalog")
+    u = sub.add_parser("upload")
+    u.add_argument("--collection", required=True)
     a = ap.parse_args()
     {"status": status, "mount": lambda _: mount(), "unmount": lambda _: unmount(), "search": search, "get": get,
+     "path": paths, "place": place,
      "ingest": ingest, "link-real-sfx": link_real_sfx, "cleanup": cleanup, "verify": lambda x: verify(x.collection),
-     "cache-clear": cache_clear}[a.cmd](a)
+     "cache-clear": cache_clear, "rebuild-catalog": lambda _: rebuild_catalog(),
+     "upload": lambda x: push(x.collection)}[a.cmd](a)
 
 
 if __name__ == "__main__":

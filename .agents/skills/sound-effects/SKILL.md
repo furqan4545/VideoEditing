@@ -12,6 +12,10 @@ description: Add a measured sound pass to a motion-graphics video made with Clau
 > VideoEditing repo's `downloads/` or the user's own project, never in this skill folder. The `sfx/*.ogg` files are
 > git-ignored there and fetched by `setup.sh`; if `sfx/kit/whoosh.ogg` is missing, run `./setup.sh` again.
 > For a full soundtrack process (sourcing, music edit, critique, mastering) use `real-sound`; to listen to a result, use `earshot`.
+> Need a sound this kit lacks? The big library (Sonniss GDC, real recordings) is in the cloud: `sfx-cloud search WORDS`
+> prints a ready path. To use one here, add it to a COPY of `sfx/manifest.json` under `bundled` (`file` = that absolute
+> path, `category`, `license`, `source_url` from `sfx-cloud search --json`), run with `--manifest` pointing at the copy,
+> and select it with `--swaps '{"<cue index>": "<that same file value>"}'` (see the `sfx-cloud` skill).
 
 Claude can't hear. So this skill never judges sound by feel: it measures every step, and it hands the user 5 timestamps to check with headphones. It never says "it sounds good".
 
