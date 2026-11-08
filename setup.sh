@@ -135,7 +135,15 @@ if [ -x /opt/homebrew/bin/npm ]; then
     cp /opt/homebrew/lib/node_modules/hyperframes/dist/skills/media-use/audio/assets/sfx/*.mp3 "$MU_SFX/"
 fi
 
-# 12. Make this repo's other skills work in any folder on this Mac
+# 12. text-behind: title text behind the person. Its person matte comes from Apple's Vision framework (built into
+#     macOS, runs on the Neural Engine, nothing downloaded); this compiles the small Swift tool that calls it.
+#     The compositor runs with onetake's Python (step 8: numpy + Pillow).
+if command -v swiftc >/dev/null; then
+  mkdir -p "$HOME/.local/share/text-behind"
+  swiftc -O "$REPO/.agents/skills/text-behind/scripts/personmask.swift" -o "$HOME/.local/share/text-behind/personmask"
+fi
+
+# 13. Make this repo's other skills work in any folder on this Mac
 #    (~/.agents/skills is read by Codex and others, ~/.claude/skills by Claude Code)
 for skill in "$REPO"/.agents/skills/*/; do
   name="$(basename "$skill")"

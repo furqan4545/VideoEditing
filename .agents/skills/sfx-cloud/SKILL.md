@@ -34,7 +34,9 @@ critique) use `real-sfx`, which picks from the same cloud library.
    place the winner, and name the timestamps the user should listen to. You cannot hear: never call a pick "good".
 3. For a whole film, let `real-sfx` do the picking from the cloud (below).
 
-Collections: `sonniss-gdc-2024`, `sonniss-gdc-2026` (real recordings, the main library), `sound-effects-cc0` (CC0
+Collections: `sonniss-gdc-2024`, `sonniss-gdc-2026` (real recordings, the main library), `ali-own` (the user's own picks
+from `~/Desktop/MY VIDEO EDITING STUFF/Ali_BG_MUSIC`: cinematic booms/whooshes, click, enter, iPhone sounds, heartbeat, typing,
+marker, and `ishowspeed-memes/`; licence per file unknown, fine for the user's own reels), `sound-effects-cc0` (CC0
 recordings), `earshot-sfx` (made in code), `uisfx` (synthesized UI sounds). Prefer the real recordings unless the user
 wants the others. `sfx-cloud status` lists them with counts.
 
