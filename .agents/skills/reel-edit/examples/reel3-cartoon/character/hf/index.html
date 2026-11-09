@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #ece4d6;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="20.56"
+      data-width="1080"
+      data-height="1920"
+    >
+      <div
+        id="talk"
+        data-composition-id="talk"
+        data-composition-src="compositions/talk.html"
+        data-start="0"
+        data-duration="20.56"
+        data-track-index="1"
+        data-track-kind="graphics"
+        data-width="1080"
+        data-height="1920"
+      ></div>
+
+      <!-- the old-man voice speaking five languages (VoiceStudio, designed voice "Old Man (multilingual)") -->
+      <audio id="voice" class="clip" data-start="0" data-duration="20.56" data-track-index="2" data-volume="1" src="assets/voice.wav"></audio>
+
+      <!-- one different whoosh per language switch, under the voice -->
+      <audio id="sw-es" class="clip" data-start="3.64" data-duration="0.91" data-track-index="3" data-volume="0.4" src="assets/sfx/sw1.wav"></audio>
+      <audio id="sw-ja" class="clip" data-start="7.24" data-duration="0.32" data-track-index="3" data-volume="0.4" src="assets/sfx/sw2.wav"></audio>
+      <audio id="sw-fr" class="clip" data-start="10.69" data-duration="1.06" data-track-index="3" data-volume="0.4" src="assets/sfx/sw3.wav"></audio>
+      <audio id="sw-zh" class="clip" data-start="14.0" data-duration="0.54" data-track-index="3" data-volume="0.4" src="assets/sfx/sw4.wav"></audio>
+      <audio id="sw-punch" class="clip" data-start="16.51" data-duration="1.03" data-track-index="3" data-volume="0.4" src="assets/sfx/sw5.wav"></audio>
+    </div>
+    <script>
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

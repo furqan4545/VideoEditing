@@ -1,0 +1,502 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "PingFangSC";
+      src: local("PingFang SC");
+      font-weight: 600;
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, #f1eadf 0%, #e8decf 62%, #ddd1bf 100%);
+      font-family: "Inter", sans-serif;
+    }
+    /* the camera: room, big word and character move together; pill and captions stay put so they read */
+    #talk-cam {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #f1eadf 0%, #e8decf 62%, #ddd1bf 100%);
+    }
+    /* his room, simplified: wood rail, ceiling panel, pampas grass, dark poster */
+    #talk-room-rail { position: absolute; left: 0; right: 0; top: 1060px; height: 14px; background: #c9a678; }
+    #talk-room-panel { position: absolute; left: 330px; top: 70px; width: 470px; height: 260px; border: 6px solid #e2dacd; border-top: 0; }
+    #talk-room-poster { position: absolute; right: 40px; top: 760px; width: 190px; height: 300px; background: #3a3734; border-radius: 6px; }
+    #talk-room-poster i { display: block; height: 10px; margin: 26px 22px 0; background: #6e6a65; border-radius: 4px; }
+    #talk-room-plant { position: absolute; left: 6px; top: 420px; width: 200px; height: 760px; }
+
+    /* the language word, huge, behind his head */
+    .bgword { position: absolute; left: 0; right: 0; top: 262px; text-align: center; z-index: 1; }
+    .bgword span {
+      display: inline-block;
+      font-family: "League Gothic", sans-serif;
+      font-size: var(--fs, 430px);
+      line-height: 1;
+      letter-spacing: 6px;
+      color: var(--c);
+    }
+    .bgword.cjk span { font-family: "PingFangSC", "Noto Sans JP", sans-serif; font-weight: 600; font-size: 330px; letter-spacing: 10px; }
+
+    #talk-char { position: absolute; left: -35px; top: 130px; width: 1150px; height: 1794px; z-index: 2; }
+
+    /* "now speaking" pill */
+    .pill { position: absolute; left: 0; right: 0; top: 196px; text-align: center; z-index: 3; }
+    .pill span {
+      display: inline-block;
+      padding: 16px 34px;
+      border-radius: 60px;
+      background: #141414;
+      color: #fff;
+      font-weight: 800;
+      font-size: 38px;
+      letter-spacing: 3px;
+    }
+    .pill b { color: var(--c); }
+
+    /* captions: original line + English meaning */
+    .cap { position: absolute; left: 90px; right: 90px; top: 1128px; z-index: 4; text-align: center; }
+    .cap div {
+      display: inline-block;
+      padding: 22px 34px 24px;
+      border-radius: 30px;
+      background: rgba(18, 16, 14, 0.82);
+    }
+    .cap p { color: #fff; font-weight: 800; font-size: 50px; line-height: 1.18; }
+    .cap p.cjk { font-family: "PingFangSC", "Noto Sans JP", sans-serif; font-weight: 600; }
+    .cap em { display: block; margin-top: 10px; color: #ffd54a; font-style: normal; font-weight: 700; font-size: 34px; line-height: 1.2; }
+  </style>
+
+  <div id="root" data-composition-id="talk" data-width="1080" data-height="1920">
+    <div id="talk-cam" data-layout-allow-overflow>
+    <div id="talk-room-rail"></div>
+    <div id="talk-room-panel"></div>
+    <div id="talk-room-poster" data-layout-ignore><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <svg id="talk-room-plant" viewBox="0 0 200 760" data-layout-ignore>
+      <rect x="62" y="560" width="70" height="200" rx="10" fill="#d8cfc2" />
+      <g stroke="#cdb894" stroke-width="7" stroke-linecap="round" fill="none">
+        <path d="M 96 560 C 90 420 70 300 40 150" /><path d="M 100 560 C 104 400 120 260 150 90" />
+        <path d="M 98 560 C 96 430 92 330 96 200" /><path d="M 94 560 C 80 460 40 380 14 300" />
+      </g>
+      <g fill="#e6d6b8" opacity="0.95">
+        <ellipse cx="40" cy="150" rx="22" ry="80" transform="rotate(-18 40 150)" />
+        <ellipse cx="150" cy="95" rx="22" ry="85" transform="rotate(14 150 95)" />
+        <ellipse cx="96" cy="200" rx="20" ry="80" />
+        <ellipse cx="16" cy="300" rx="18" ry="70" transform="rotate(-30 16 300)" />
+      </g>
+    </svg>
+
+    <!-- language words behind the head -->
+    <div id="talk-bg-en" class="bgword clip" data-start="{S_en}" data-duration="{D_en}" style="--c:#ff5a36;--fs:400px"><span>ENGLISH</span></div>
+    <div id="talk-bg-es" class="bgword clip" data-start="{S_es}" data-duration="{D_es}" style="--c:#e39a00;--fs:400px"><span>ESPAÑOL</span></div>
+    <div id="talk-bg-ja" class="bgword cjk clip" data-start="{S_ja}" data-duration="{D_ja}" style="--c:#e1253b"><span>日本語</span></div>
+    <div id="talk-bg-fr" class="bgword clip" data-start="{S_fr}" data-duration="{D_fr}" style="--c:#2c5ee8;--fs:372px"><span>FRANÇAIS</span></div>
+    <div id="talk-bg-zh" class="bgword cjk clip" data-start="{S_zh}" data-duration="{D_zh}" style="--c:#d8261f"><span>中文</span></div>
+    <div id="talk-bg-punch" class="bgword clip" data-start="{S_punch}" data-duration="{D_punch}" style="--c:#c99a1e;--fs:318px"><span>FINE SHYT</span></div>
+
+    <!-- the cartoon of Ali -->
+    <svg id="talk-char" viewBox="0 0 1000 1560" data-layout-allow-overflow>
+      <defs>
+        <pattern id="stub" width="9" height="9" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="3" r="1.4" fill="#4a3a30" /><circle cx="6.5" cy="7" r="1.2" fill="#4a3a30" /><circle cx="7" cy="2" r="1" fill="#5c4a3d" />
+        </pattern>
+        <radialGradient id="skinG" cx="46%" cy="38%" r="72%">
+          <stop offset="0" stop-color="#e4b18c" /><stop offset="1" stop-color="#cd916c" />
+        </radialGradient>
+        <linearGradient id="hairG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#8f5e33" /><stop offset="1" stop-color="#4b301c" />
+        </linearGradient>
+        <clipPath id="eyeClipL"><ellipse cx="410" cy="556" rx="31" ry="17" /></clipPath>
+        <clipPath id="eyeClipR"><ellipse cx="590" cy="556" rx="31" ry="17" /></clipPath>
+        <clipPath id="mouthClip"><path id="mouthClipPath" d="M 450 724 L 550 724 Z" /></clipPath>
+      </defs>
+
+      <!-- body: cream crew-neck sweatshirt, neck, gold chain -->
+      <g id="talk-body">
+        <path d="M 425 750 L 575 750 L 592 940 Q 500 985 408 940 Z" fill="#cc906b" />
+        <path d="M 425 772 Q 500 846 575 772 L 575 750 L 425 750 Z" fill="#b47957" opacity="0.75" />
+        <path d="M 80 1560 C 92 1185 222 1000 404 932 L 596 932 C 778 1000 908 1185 920 1560 Z" fill="#efe8dc" stroke="#d4c9b7" stroke-width="6" />
+        <path d="M 246 1210 C 296 1270 326 1400 328 1560" stroke="#e1d7c7" stroke-width="12" fill="none" />
+        <path d="M 754 1210 C 704 1270 674 1400 672 1560" stroke="#e1d7c7" stroke-width="12" fill="none" />
+        <path d="M 436 924 Q 500 972 564 924" stroke="#d9ac3a" stroke-width="5" fill="none" stroke-dasharray="8 4" />
+        <path d="M 392 930 Q 500 1002 608 930" stroke="#e3d9c8" stroke-width="32" fill="none" stroke-linecap="round" />
+        <path d="M 392 930 Q 500 1002 608 930" stroke="#d2c6b3" stroke-width="3" fill="none" stroke-dasharray="3 9" />
+      </g>
+
+      <g id="talk-switch">
+        <g id="talk-idle">
+          <!-- ears -->
+          <ellipse cx="308" cy="575" rx="32" ry="56" fill="#d29873" stroke="#9c6345" stroke-width="4" />
+          <ellipse cx="692" cy="575" rx="32" ry="56" fill="#d29873" stroke="#9c6345" stroke-width="4" />
+          <path d="M 300 552 Q 318 575 302 602" stroke="#a86b4b" stroke-width="5" fill="none" />
+          <path d="M 700 552 Q 682 575 698 602" stroke="#a86b4b" stroke-width="5" fill="none" />
+
+          <!-- face -->
+          <path d="M 312 470 C 305 330 695 330 688 470 L 686 600 C 682 705 618 792 500 802 C 382 792 318 705 314 600 Z" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" />
+
+          <!-- stubble beard + moustache -->
+          <path d="M 318 598 C 332 702 396 792 500 801 C 604 792 668 702 682 598 C 664 648 632 688 594 700 C 562 682 532 678 500 680 C 468 678 438 682 406 700 C 368 688 336 648 318 598 Z" fill="#9a7058" opacity="0.34" />
+          <path d="M 318 598 C 332 702 396 792 500 801 C 604 792 668 702 682 598 C 664 648 632 688 594 700 C 562 682 532 678 500 680 C 468 678 438 682 406 700 C 368 688 336 648 318 598 Z" fill="url(#stub)" opacity="0.6" />
+          <path d="M 428 702 C 458 684 542 684 572 702 L 566 712 C 536 698 464 698 434 712 Z" fill="url(#stub)" opacity="0.75" />
+
+          <!-- nose -->
+          <path d="M 499 520 C 493 576 478 614 470 640 C 468 661 488 672 500 668 C 512 672 532 661 530 640 C 522 614 507 576 501 520" fill="#d89a75" stroke="#a86b4b" stroke-width="3.5" />
+          <path d="M 502 528 C 508 580 520 612 526 636" stroke="#c4855f" stroke-width="7" fill="none" opacity="0.6" />
+          <ellipse cx="485" cy="656" rx="7" ry="4" fill="#7a4632" /><ellipse cx="515" cy="656" rx="7" ry="4" fill="#7a4632" />
+
+          <!-- eyes: sclera, iris, heavy upper lid (moved per frame) -->
+          <g clip-path="url(#eyeClipL)">
+            <ellipse cx="410" cy="556" rx="31" ry="17" fill="#f6f0e7" />
+            <g id="talk-irisL"><circle cx="412" cy="558" r="13" fill="#3b2416" /><circle cx="412" cy="558" r="6" fill="#120905" /><circle cx="417" cy="553" r="3" fill="#fff" /></g>
+            <rect id="talk-lidL" x="370" y="530" width="80" height="16" fill="#d29a74" />
+          </g>
+          <g clip-path="url(#eyeClipR)">
+            <ellipse cx="590" cy="556" rx="31" ry="17" fill="#f6f0e7" />
+            <g id="talk-irisR"><circle cx="592" cy="558" r="13" fill="#3b2416" /><circle cx="592" cy="558" r="6" fill="#120905" /><circle cx="597" cy="553" r="3" fill="#fff" /></g>
+            <rect id="talk-lidR" x="550" y="530" width="80" height="16" fill="#d29a74" />
+          </g>
+          <path id="talk-lidLineL" d="M 378 548 Q 410 540 442 548" stroke="#2e1c12" stroke-width="5" fill="none" stroke-linecap="round" />
+          <path id="talk-lidLineR" d="M 558 548 Q 590 540 622 548" stroke="#2e1c12" stroke-width="5" fill="none" stroke-linecap="round" />
+          <path d="M 384 578 Q 410 588 436 578" stroke="#b77d5a" stroke-width="3" fill="none" opacity="0.7" />
+          <path d="M 564 578 Q 590 588 616 578" stroke="#b77d5a" stroke-width="3" fill="none" opacity="0.7" />
+
+          <!-- thick dark eyebrows -->
+          <g id="talk-browL"><path d="M 350 506 C 378 484 440 480 472 494 L 470 516 C 440 506 390 509 354 526 Z" fill="#2a1c14" /></g>
+          <g id="talk-browR"><path d="M 650 506 C 622 484 560 480 528 494 L 530 516 C 560 506 610 509 646 526 Z" fill="#2a1c14" /></g>
+
+          <!-- mouth (rebuilt every frame from the voice) -->
+          <g id="talk-mouth">
+            <path id="talk-inner" d="M 450 724 L 550 724 Z" fill="#3a1216" />
+            <g clip-path="url(#mouthClip)">
+              <rect id="talk-teeth" x="460" y="716" width="80" height="12" fill="#f4efe6" />
+              <rect id="talk-gap" x="498.5" y="716" width="3" height="12" fill="#3a1216" />
+              <ellipse id="talk-tongue" cx="500" cy="740" rx="30" ry="8" fill="#b4505a" />
+            </g>
+            <path id="talk-upper" d="M 450 724 L 550 724 Z" fill="#b8706a" />
+            <path id="talk-lower" d="M 450 724 L 550 724 Z" fill="#c97f7a" />
+            <path id="talk-seam" d="M 450 724 L 550 724" stroke="#6e3530" stroke-width="3" fill="none" stroke-linecap="round" />
+          </g>
+
+          <!-- big wavy hair with caramel highlights, faded sides -->
+          <rect x="306" y="470" width="16" height="92" rx="6" fill="#3a2a20" opacity="0.85" />
+          <rect x="678" y="470" width="16" height="92" rx="6" fill="#3a2a20" opacity="0.85" />
+          <path d="M 300 520 C 286 450 282 380 300 330 C 318 270 360 228 410 214 C 440 190 480 182 515 190 C 560 176 610 186 645 212 C 690 240 720 290 718 350 C 722 410 716 470 702 520 C 696 480 690 452 676 432 C 650 442 628 422 612 410 C 590 432 560 430 540 416 C 515 438 480 434 462 416 C 440 434 405 432 390 412 C 370 430 345 438 326 430 C 314 452 306 486 300 520 Z" fill="url(#hairG)" stroke="#2e1d12" stroke-width="5" />
+          <g stroke-linecap="round" fill="none">
+            <g stroke="#c58f55" stroke-width="10">
+              <path d="M 360 300 C 380 270 420 262 440 285" /><path d="M 470 250 C 500 225 540 228 556 252" />
+              <path d="M 582 282 C 612 257 652 264 664 294" /><path d="M 402 362 C 432 337 472 342 482 367" />
+              <path d="M 522 332 C 557 307 597 314 606 342" /><path d="M 330 382 C 345 354 372 352 385 374" />
+              <path d="M 626 368 C 651 348 681 358 690 384" />
+            </g>
+            <g stroke="#3a2415" stroke-width="7">
+              <path d="M 420 318 C 440 298 470 303 476 323" /><path d="M 560 368 C 580 350 606 356 610 376" />
+              <path d="M 350 340 C 362 322 384 326 388 342" /><path d="M 632 316 C 650 300 672 308 676 326" />
+              <path d="M 478 290 C 498 272 524 278 528 296" />
+            </g>
+            <g stroke="#4b301c" stroke-width="9">
+              <path d="M 440 414 C 452 442 446 457 432 470" /><path d="M 540 416 C 554 440 549 455 538 466" />
+              <path d="M 610 410 C 622 430 620 446 610 456" />
+            </g>
+          </g>
+        </g>
+      </g>
+
+      <!-- hands: forearm in a sweatshirt sleeve rising from below the frame; posed per frame in render() -->
+      <g id="talk-hands">
+      <g id="talk-handR">
+        <path d="M -84 30 C -92 200 -100 420 -104 760 L 104 760 C 100 420 92 200 84 30 Z" fill="#e9e1d3" stroke="#cfc3b0" stroke-width="6" />
+        <path d="M -40 120 C -46 300 -50 480 -52 760" stroke="#ddd3c2" stroke-width="10" fill="none" />
+        <rect x="-50" y="-44" width="100" height="70" fill="#d29873" />
+        <g id="talk-handR-hand">
+          <g id="talk-handR-f0" transform="translate(46 -172)"><rect x="-17.0" y="-108" width="34" height="148" rx="17.0" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -10.0 -45 Q 0 -41 10.0 -45" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handR-f1" transform="translate(15 -176)"><rect x="-17.5" y="-122" width="35" height="162" rx="17.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -10.5 -51 Q 0 -47 10.5 -51" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handR-f2" transform="translate(-17 -173)"><rect x="-16.5" y="-112" width="33" height="152" rx="16.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -9.5 -47 Q 0 -43 9.5 -47" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handR-f3" transform="translate(-47 -162)"><rect x="-14.5" y="-88" width="29" height="128" rx="14.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -7.5 -37 Q 0 -33 7.5 -37" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handR-th" transform="translate(60 -70)"><rect x="-19" y="-96" width="38" height="136" rx="19" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /></g>
+          <path d="M -74 -150 Q -76 -182 -46 -182 L 48 -182 Q 76 -182 76 -150 L 68 -62 Q 62 -16 0 -12 Q -62 -16 -68 -62 Z" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" />
+          <g id="talk-handR-c0" transform="translate(46 -184)" opacity="0"><rect x="-17.0" y="0" width="34" height="58" rx="17.0" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <g id="talk-handR-c1" transform="translate(15 -184)" opacity="0"><rect x="-17.5" y="0" width="35" height="58" rx="17.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <g id="talk-handR-c2" transform="translate(-17 -184)" opacity="0"><rect x="-16.5" y="0" width="33" height="58" rx="16.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <g id="talk-handR-c3" transform="translate(-47 -184)" opacity="0"><rect x="-14.5" y="0" width="29" height="52" rx="14.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <path d="M -38 -150 Q 0 -140 38 -150" stroke="#b47957" stroke-width="3" fill="none" opacity="0.6" />
+        </g>
+        <rect x="-90" y="2" width="180" height="56" rx="26" fill="#e3d9c8" stroke="#cfc3b0" stroke-width="5" />
+        <path d="M -60 12 L -60 48 M -30 12 L -30 50 M 0 12 L 0 50 M 30 12 L 30 50 M 60 12 L 60 48" stroke="#d6cbb8" stroke-width="3" />
+      </g>
+      <g id="talk-handL">
+        <path d="M -84 30 C -92 200 -100 420 -104 760 L 104 760 C 100 420 92 200 84 30 Z" fill="#e9e1d3" stroke="#cfc3b0" stroke-width="6" />
+        <path d="M -40 120 C -46 300 -50 480 -52 760" stroke="#ddd3c2" stroke-width="10" fill="none" />
+        <rect x="-50" y="-44" width="100" height="70" fill="#d29873" />
+        <g id="talk-handL-hand">
+          <g id="talk-handL-f0" transform="translate(46 -172)"><rect x="-17.0" y="-108" width="34" height="148" rx="17.0" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -10.0 -45 Q 0 -41 10.0 -45" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handL-f1" transform="translate(15 -176)"><rect x="-17.5" y="-122" width="35" height="162" rx="17.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -10.5 -51 Q 0 -47 10.5 -51" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handL-f2" transform="translate(-17 -173)"><rect x="-16.5" y="-112" width="33" height="152" rx="16.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -9.5 -47 Q 0 -43 9.5 -47" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handL-f3" transform="translate(-47 -162)"><rect x="-14.5" y="-88" width="29" height="128" rx="14.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /><path d="M -7.5 -37 Q 0 -33 7.5 -37" stroke="#b47957" stroke-width="3" fill="none" vector-effect="non-scaling-stroke" /></g>
+          <g id="talk-handL-th" transform="translate(60 -70)"><rect x="-19" y="-96" width="38" height="136" rx="19" fill="url(#skinG)" stroke="#9c6345" stroke-width="4.6" vector-effect="non-scaling-stroke" /></g>
+          <path d="M -74 -150 Q -76 -182 -46 -182 L 48 -182 Q 76 -182 76 -150 L 68 -62 Q 62 -16 0 -12 Q -62 -16 -68 -62 Z" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" />
+          <g id="talk-handL-c0" transform="translate(46 -184)" opacity="0"><rect x="-17.0" y="0" width="34" height="58" rx="17.0" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <g id="talk-handL-c1" transform="translate(15 -184)" opacity="0"><rect x="-17.5" y="0" width="35" height="58" rx="17.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <g id="talk-handL-c2" transform="translate(-17 -184)" opacity="0"><rect x="-16.5" y="0" width="33" height="58" rx="16.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <g id="talk-handL-c3" transform="translate(-47 -184)" opacity="0"><rect x="-14.5" y="0" width="29" height="52" rx="14.5" fill="url(#skinG)" stroke="#9c6345" stroke-width="4" /></g>
+          <path d="M -38 -150 Q 0 -140 38 -150" stroke="#b47957" stroke-width="3" fill="none" opacity="0.6" />
+        </g>
+        <rect x="-90" y="2" width="180" height="56" rx="26" fill="#e3d9c8" stroke="#cfc3b0" stroke-width="5" />
+        <path d="M -60 12 L -60 48 M -30 12 L -30 50 M 0 12 L 0 50 M 30 12 L 30 50 M 60 12 L 60 48" stroke="#d6cbb8" stroke-width="3" />
+      </g>
+      </g>
+    </svg>
+    </div>
+
+    <!-- "now speaking" pill -->
+    <div id="talk-pill-en" class="pill clip" data-start="{S_en}" data-duration="{D_en}" style="--c:#ff5a36"><span>NOW SPEAKING: <b>ENGLISH</b></span></div>
+    <div id="talk-pill-es" class="pill clip" data-start="{S_es}" data-duration="{D_es}" style="--c:#f0a500"><span>NOW SPEAKING: <b>SPANISH</b></span></div>
+    <div id="talk-pill-ja" class="pill clip" data-start="{S_ja}" data-duration="{D_ja}" style="--c:#ff4b5f"><span>NOW SPEAKING: <b>JAPANESE</b></span></div>
+    <div id="talk-pill-fr" class="pill clip" data-start="{S_fr}" data-duration="{D_fr}" style="--c:#6f95ff"><span>NOW SPEAKING: <b>FRENCH</b></span></div>
+    <div id="talk-pill-zh" class="pill clip" data-start="{S_zh}" data-duration="{D_zh}" style="--c:#ff4b3e"><span>NOW SPEAKING: <b>CHINESE</b></span></div>
+    <div id="talk-pill-punch" class="pill clip" data-start="{S_punch}" data-duration="{D_punch}" style="--c:#ffd54a"><span>BACK TO <b>ENGLISH</b></span></div>
+
+    <!-- captions -->
+    <div id="talk-cap-en" class="cap clip" data-start="{S_en}" data-duration="{D_en}"><div><p>I speak five languages.<br />I learned them 10 seconds ago.</p></div></div>
+    <div id="talk-cap-es" class="cap clip" data-start="{S_es}" data-duration="{D_es}"><div><p>Hola, amigos. Ahora hablo español, sin estudiar nada.</p><em>Hi friends. Now I speak Spanish. Zero studying.</em></div></div>
+    <div id="talk-cap-ja" class="cap clip" data-start="{S_ja}" data-duration="{D_ja}"><div><p class="cjk">こんにちは。<br />今は日本語を話しています。</p><em>Hello. Now I'm speaking Japanese.</em></div></div>
+    <div id="talk-cap-fr" class="cap clip" data-start="{S_fr}" data-duration="{D_fr}"><div><p>Bonjour. Maintenant, je parle français. Évidemment.</p><em>Hello. Now I speak French. Obviously.</em></div></div>
+    <div id="talk-cap-zh" class="cap clip" data-start="{S_zh}" data-duration="{D_zh}"><div><p class="cjk">大家好。现在我说中文。</p><em>Hi everyone. Now I speak Chinese.</em></div></div>
+    <div id="talk-cap-punch" class="cap clip" data-start="{S_punch}" data-duration="{D_punch}"><div><p>Jensen Huang loves<br />Chinese fine shyt.</p></div></div>
+  </div>
+
+  <script>
+    (function () {
+      const M = __MOUTH__;
+      const LINES = __LINES__;
+      const TOTAL = __TOTAL__;
+      const REF = __REF__; // line timing the hand keys below were written against
+      // rt(): a time on REF's clock -> the same moment on LINES' clock (inside a line: proportional;
+      // in a gap: kept at the same distance from the nearer line edge)
+      function rt(t) {
+        const n = REF.length;
+        if (t <= REF[0].start) return LINES[0].start - (REF[0].start - t);
+        for (let k = 0; k < n; k++) {
+          const a = REF[k], b = LINES[k];
+          if (t <= a.end) return b.start + ((t - a.start) * (b.end - b.start)) / (a.end - a.start);
+          if (k + 1 < n && t < REF[k + 1].start) {
+            const after = t - a.end, before = REF[k + 1].start - t;
+            return after <= before ? b.end + after : LINES[k + 1].start - before;
+          }
+        }
+        return LINES[n - 1].end + (t - REF[n - 1].end);
+      }
+      const FPS = M.fps;
+      const $ = (id) => document.getElementById(id);
+      const set = (id, a, v) => $(id).setAttribute(a, v);
+
+      // seeded blinks: fixed times plus one blink right after every language switch
+      const BLINKS = [1.55, 2.9, 5.2, 6.6, 9.1, 12.2, 13.4, 15.6, 18.3, 19.4].map(rt).concat(LINES.slice(1).map((l) => l.start - 0.12));
+      const blinkAt = (t) => {
+        let v = 0;
+        for (const b of BLINKS) {
+          const d = Math.abs(t - b);
+          if (d < 0.09) v = Math.max(v, 1 - d / 0.09);
+        }
+        return v;
+      };
+      const sample = (arr, t) => {
+        const f = t * FPS, i = Math.max(0, Math.min(arr.length - 2, Math.floor(f))), k = Math.min(1, Math.max(0, f - i));
+        return arr[i] * (1 - k) + arr[i + 1] * k;
+      };
+      const lineAt = (t) => LINES.find((l) => t >= l.start - 0.4 && t < l.end + 0.4);
+
+      // ---- hands: poses, places and a gesture timeline cut to the words ----
+      // pose: four fingers [angle, extension] (index..pinky, + leans toward the thumb), thumb [angle, ext, base x, base y, width]
+      const POSE = {
+        open:  { f: [[15, 1], [4, 1], [-7, 1], [-19, 1]], th: [54, 1, 60, -70, 1] },
+        flat:  { f: [[5, 1], [1, 1], [-3, 0.97], [-8, 0.92]], th: [26, 0.95, 60, -70, 1] },
+        point: { f: [[3, 1.06], [0, 0.3], [-2, 0.3], [-4, 0.3]], th: [-14, 0.55, 46, -96, 1] },
+        thumb: { f: [[2, 0.12], [0, 0.12], [-2, 0.12], [-4, 0.12]], th: [6, 1.1, 62, -124, 1.42] },
+      };
+      // place: wrist x, wrist y, forearm angle, hand angle (viewBox units; the left hand is mirrored)
+      const PLACE = {
+        up: [330, 1390, 16, 0], mid: [320, 1475, 20, 4], rest: [290, 1900, 26, 0],
+        wide: [236, 1420, 6, -14], shrug: [252, 1436, -16, -40], thumbs: [292, 1405, 14, -12], both: [282, 1398, 12, -7], bothmid: [288, 1478, 16, -4],
+      };
+      // [time, right hand [place, pose], left hand [place, pose]]: each state is reached at its time
+      const KEYS_REF = [
+        [0.0, ["up", "open"], ["rest", "flat"]],          // "I speak FIVE languages": one hand, five fingers
+        [1.55, ["up", "open"], ["rest", "flat"]],
+        [1.95, ["both", "open"], ["both", "open"]],           // "TEN seconds ago": both hands, ten fingers
+        [3.3, ["both", "open"], ["both", "open"]],
+        [3.62, ["rest", "flat"], ["rest", "flat"]],
+        [3.85, ["up", "open"], ["rest", "flat"]],         // "Hola, amigos": wave
+        [4.7, ["up", "flat"], ["rest", "flat"]],
+        [5.2, ["mid", "flat"], ["rest", "flat"]],
+        [5.85, ["up", "point"], ["rest", "flat"]],        // "sin estudiar nada": finger wag (left of frame)
+        [6.95, ["up", "point"], ["rest", "flat"]],
+        [7.1, ["up", "open"], ["rest", "flat"]],          // hand stays up, ready to wave
+        [7.5, ["up", "open"], ["rest", "flat"]],          // "konnichiwa": wave (left of frame)
+        [8.3, ["up", "open"], ["rest", "flat"]],
+        [8.55, ["up", "point"], ["rest", "flat"]],        // "ima wa": one finger up
+        [9.2, ["up", "point"], ["rest", "flat"]],
+        [9.45, ["bothmid", "flat"], ["bothmid", "flat"]],         // talking with both hands
+        [10.35, ["bothmid", "flat"], ["bothmid", "flat"]],
+        [10.7, ["rest", "flat"], ["rest", "flat"]],
+        [10.98, ["rest", "flat"], ["up", "open"]],        // "Bonjour": wave
+        [11.6, ["rest", "flat"], ["rest", "flat"]],
+        [12.0, ["up", "flat"], ["rest", "flat"]],
+        [12.85, ["up", "flat"], ["rest", "flat"]],
+        [13.2, ["shrug", "open"], ["shrug", "open"]],     // "Evidemment": shrug
+        [13.88, ["shrug", "open"], ["shrug", "open"]],
+        [14.25, ["wide", "open"], ["wide", "open"]],      // "da jia hao": hello everyone, arms open
+        [14.85, ["wide", "open"], ["wide", "open"]],
+        [15.15, ["up", "point"], ["rest", "flat"]],
+        [16.1, ["up", "point"], ["rest", "flat"]],
+        [16.45, ["rest", "flat"], ["rest", "flat"]],
+        [16.75, ["up", "point"], ["rest", "flat"]],       // "JENSEN Huang": finger up
+        [17.62, ["up", "point"], ["rest", "flat"]],
+        [18.15, ["thumbs", "thumb"], ["thumbs", "thumb"]], // "fine shyt": two thumbs up to the end
+        [99, ["thumbs", "thumb"], ["thumbs", "thumb"]],
+      ];
+      const KEYS = KEYS_REF.map(([t, r, l]) => [rt(t), r, l]);
+      // [hand, start, end, degrees, Hz]: waves and wags on top of the hand angle
+      const WAVES = [["R", 3.85, 4.7, 17, 3.2], ["R", 5.95, 6.9, 13, 3.6], ["R", 7.28, 8.3, 13, 2.8], ["L", 11.0, 11.55, 12, 3.0], ["R", 16.8, 17.45, 9, 3.0]]
+        .map(([h, a, b, d, f]) => [h, rt(a), rt(b), d, f]);
+      const SHRUG = [13.12, 13.34, 13.86, 14.12].map(rt); // shoulders up and down
+      const lerp = (a, b, u) => a + (b - a) * u;
+      const ease = (u) => u * u * (3 - 2 * u);
+      function handState(t, side) {
+        let i = 0;
+        while (i < KEYS.length - 2 && t >= KEYS[i + 1][0]) i++;
+        const [t0, r0, l0] = KEYS[i], [t1, r1, l1] = KEYS[i + 1];
+        const a = side === "R" ? r0 : l0, b = side === "R" ? r1 : l1;
+        const u = ease(Math.min(1, Math.max(0, (t - t0) / Math.max(1e-3, t1 - t0))));
+        const pa = PLACE[a[0]], pb = PLACE[b[0]], qa = POSE[a[1]], qb = POSE[b[1]];
+        return {
+          place: pa.map((v, k) => lerp(v, pb[k], u)),
+          f: qa.f.map((fv, k) => [lerp(fv[0], qb.f[k][0], u), lerp(fv[1], qb.f[k][1], u)]),
+          th: qa.th.map((v, k) => lerp(v, qb.th[k], u)),
+        };
+      }
+      const FBASE = [[46, -172], [15, -176], [-17, -173], [-47, -162]];
+      function renderHand(t, side, e) {
+        const s = handState(t, side);
+        let [x, y, arm, rot] = s.place;
+        const ph = side === "R" ? 0 : 1.7;
+        const up = Math.min(1, Math.max(0, (1700 - y) / 280));
+        // never still: a slow drift, plus beats that follow the voice while the hand is up
+        x += 5 * Math.sin((2 * Math.PI * t) / 2.7 + ph);
+        y += 6 * Math.sin((2 * Math.PI * t) / 3.3 + ph) - 18 * e * up * Math.abs(Math.sin(Math.PI * t * 2.1 + ph));
+        rot += 3.5 * e * up * Math.sin((2 * Math.PI * t) / 0.9 + ph);
+        for (const [h, a, b, deg, hz] of WAVES) {
+          if (h === side && t > a && t < b) rot += deg * Math.sin((Math.PI * (t - a)) / (b - a)) * Math.sin(2 * Math.PI * hz * (t - a));
+        }
+        y -= shrugAt(t) * 0.9;
+        const id = `talk-hand${side}`;
+        const mx = side === "R" ? x : 1000 - x;
+        set(id, "transform", `translate(${mx.toFixed(1)} ${y.toFixed(1)}) scale(${side === "R" ? 1.1 : -1.1} 1.1) rotate(${arm.toFixed(2)})`);
+        set(`${id}-hand`, "transform", `rotate(${rot.toFixed(2)})`);
+        s.f.forEach(([ang, ext], k) => {
+          set(`${id}-f${k}`, "transform", `translate(${FBASE[k][0]} ${FBASE[k][1]}) rotate(${ang.toFixed(2)}) scale(1 ${ext.toFixed(3)})`);
+          // a curled finger folds down over the palm
+          set(`${id}-c${k}`, "opacity", Math.min(1, Math.max(0, (0.72 - ext) / 0.3)).toFixed(3));
+        });
+        const [ta, te, tx, ty, tw] = s.th;
+        set(`${id}-th`, "transform", `translate(${tx.toFixed(1)} ${ty.toFixed(1)}) rotate(${ta.toFixed(2)}) scale(${tw.toFixed(3)} ${te.toFixed(3)})`);
+      }
+      function shrugAt(t) {
+        const [a, b, c, d] = SHRUG;
+        if (t <= a || t >= d) return 0;
+        if (t < b) return 16 * ease((t - a) / (b - a));
+        if (t <= c) return 16;
+        return 16 * (1 - ease((t - c) / (d - c)));
+      }
+
+      function render(t) {
+        const o = sample(M.open, t), w = sample(M.wide, t), r = sample(M.round, t), e = sample(M.energy, t);
+        const punch = t >= LINES[5].start - 0.2;
+
+        // mouth: width, opening, pucker; grumpy down-turned corners, smug on the punchline
+        const cx = 500, cy = 722;
+        const hw = 62 * (1 + 0.22 * w - 0.3 * r);
+        const oh = 2 + 52 * o * (1 - 0.18 * w) + 6 * o * r;
+        const top = cy - oh * 0.3, bot = cy + oh * 0.7;
+        const cyC = cy + (punch && o < 0.08 ? -4 : 4);
+        const inner = `M ${cx - hw + 4} ${cyC} C ${cx - hw * 0.6} ${top} ${cx + hw * 0.6} ${top} ${cx + hw - 4} ${cyC} C ${cx + hw * 0.6} ${bot} ${cx - hw * 0.6} ${bot} ${cx - hw + 4} ${cyC} Z`;
+        set("talk-inner", "d", inner);
+        set("mouthClipPath", "d", inner);
+        set("talk-upper", "d", `M ${cx - hw} ${cyC} C ${cx - hw * 0.55} ${top - 7} ${cx - 22} ${top - 14} ${cx - 10} ${top - 13} Q ${cx} ${top - 8} ${cx + 10} ${top - 13} C ${cx + 22} ${top - 14} ${cx + hw * 0.55} ${top - 7} ${cx + hw} ${cyC} C ${cx + hw * 0.6} ${top + 2} ${cx - hw * 0.6} ${top + 2} ${cx - hw} ${cyC} Z`);
+        set("talk-lower", "d", `M ${cx - hw} ${cyC} C ${cx - hw * 0.6} ${bot - 2} ${cx + hw * 0.6} ${bot - 2} ${cx + hw} ${cyC} C ${cx + hw * 0.72} ${bot + 19} ${cx - hw * 0.72} ${bot + 19} ${cx - hw} ${cyC} Z`);
+        set("talk-seam", "d", `M ${cx - hw + 2} ${cyC} C ${cx - hw * 0.6} ${top + 1} ${cx + hw * 0.6} ${top + 1} ${cx + hw - 2} ${cyC}`);
+        set("talk-seam", "opacity", o < 0.12 ? 1 : 0);
+        set("talk-teeth", "y", top - 2); set("talk-teeth", "height", Math.min(oh * 0.36, 15));
+        set("talk-teeth", "x", cx - hw * 0.72); set("talk-teeth", "width", hw * 1.44);
+        set("talk-gap", "y", top - 2); set("talk-gap", "height", Math.min(oh * 0.36, 15));
+        set("talk-tongue", "cy", bot - 6); set("talk-tongue", "rx", hw * 0.5); set("talk-tongue", "ry", Math.min(oh * 0.26, 12));
+
+        // eyes: heavy tired lids, blinks, quick glance on each switch
+        const blink = blinkAt(t);
+        const lidBase = punch ? 0.18 : 0.42;
+        const cover = lidBase + (1 - lidBase) * blink;
+        const lidY = 539 + cover * 34;
+        set("talk-lidL", "height", lidY - 530); set("talk-lidR", "height", lidY - 530);
+        set("talk-lidLineL", "d", `M 378 ${lidY + 1} Q 410 ${lidY - 7} 442 ${lidY + 1}`);
+        set("talk-lidLineR", "d", `M 558 ${lidY + 1} Q 590 ${lidY - 7} 622 ${lidY + 1}`);
+        const L = lineAt(t);
+        let gx = 0;
+        if (L && t - L.start > -0.35 && t - L.start < 0.15 && L !== LINES[0]) gx = -9 * Math.sin(((t - L.start + 0.35) / 0.5) * Math.PI);
+        set("talk-irisL", "transform", `translate(${gx} 0)`); set("talk-irisR", "transform", `translate(${gx} 0)`);
+
+        // brows: lift with speech energy, furrowed by default (grumpy old man), both up on the punchline
+        const shrug = shrugAt(t);
+        const lift = 7 * e + (punch ? 14 : 0) + shrug * 0.8;
+        set("talk-browL", "transform", `translate(0 ${-lift}) rotate(${punch ? -2 : 5} 410 505)`);
+        set("talk-browR", "transform", `translate(0 ${-lift * 0.85}) rotate(${punch ? 2 : -5} 590 505)`);
+
+        // head: slow sway + nods driven by speech energy, jaw drop with the mouth
+        const ang = 1.8 * Math.sin((2 * Math.PI * t) / 3.1) + 1.4 * e * Math.sin((2 * Math.PI * t) / 0.9 + 1.0);
+        const dy = -7 * e * Math.abs(Math.sin(Math.PI * t * 2.1)) + 3 * Math.sin((2 * Math.PI * t) / 2.3) + o * 3 - shrug;
+        set("talk-idle", "transform", `rotate(${ang.toFixed(3)} 500 900) translate(0 ${dy.toFixed(2)})`);
+        set("talk-body", "transform", `translate(0 ${(-shrug * 0.8).toFixed(2)})`);
+
+        // hands
+        renderHand(t, "R", e);
+        renderHand(t, "L", e);
+      }
+
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.fromTo(clock, { t: 0 }, { t: TOTAL, duration: TOTAL, ease: "none", onUpdate: () => render(clock.t) }, 0);
+
+      // each language switch is a take: anticipation, whip, overshoot, settle (head leads, words follow)
+      for (const l of LINES.slice(1)) {
+        const s = l.start - 0.34;
+        tl.fromTo("#talk-switch", { rotation: 0, scaleX: 1, scaleY: 1, svgOrigin: "500 1000" }, { rotation: 4, scaleY: 0.97, scaleX: 1.02, duration: 0.07, ease: "power2.out" }, s);
+        tl.to("#talk-switch", { rotation: -9, scaleY: 1.04, scaleX: 0.98, duration: 0.1, ease: "power3.in" }, s + 0.07);
+        tl.to("#talk-switch", { rotation: 3, scaleY: 0.99, scaleX: 1.01, duration: 0.1, ease: "power2.out" }, s + 0.17);
+        tl.to("#talk-switch", { rotation: 0, scaleY: 1, scaleX: 1, duration: 0.16, ease: "power2.inOut" }, s + 0.27);
+      }
+
+      // the big word punches in, the pill and caption slide up
+      const enter = __ENTER__;
+      for (const [k, s] of enter) {
+        if (k === "en") continue; // frame 0 is the thumbnail: word, pill and caption already on screen
+        tl.fromTo(`#talk-bg-${k} span`, { scale: 1.35, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.22, ease: "power4.out" }, s);
+        tl.fromTo(`#talk-pill-${k} span`, { y: -30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.2, ease: "power3.out" }, s + 0.04);
+        tl.fromTo(`#talk-cap-${k} div`, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.2, ease: "power3.out" }, s + 0.08);
+      }
+      // camera: subtle zoom that never stops. Each language turns it around (out, in, out...),
+      // the punchline leans in furthest. Zoomed from the top of the big word, so the word stays
+      // clear of the pill and the chin stays above the captions; never below 1.0, and the pan
+      // stays inside the zoom's spare width, so no edge ever shows.
+      const ZOOM = [1.045, 1.0, 1.045, 1.0, 1.045, 1.0, 1.065];
+      const PAN_X = [10, 0, -10, 0, 10, 0, -10];
+      tl.set("#talk-cam", { transformOrigin: "540px 300px" }, 0);
+      enter.forEach(([k, s], i) => {
+        const e = i + 1 < enter.length ? enter[i + 1][1] : TOTAL;
+        tl.fromTo("#talk-cam",
+          { scale: ZOOM[i], x: PAN_X[i] },
+          { scale: ZOOM[i + 1], x: PAN_X[i + 1], duration: Math.min(e - s, 4.2), ease: "sine.inOut", immediateRender: i === 0 },
+          s);
+      });
+
+      render(0);
+      window.__timelines["talk"] = tl;
+    })();
+  </script>
+</template>

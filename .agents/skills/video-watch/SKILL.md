@@ -30,6 +30,7 @@ The first run installs yt-dlp and ffmpeg on its own.
 | `--start T --end T` | Only one part, e.g. `--start 1:30 --end 2:15`. |
 | `--width PX` | Frame width (default 768). Smaller is cheaper to look at. |
 | `--lang xx` | Subtitle language (default `en`). |
+| `--browser chrome` | Use the user's sign-ins from that browser (`chrome`, `safari`, `firefox`, or `chrome:Profile 1`). Only for private or login-only videos, such as Instagram Reels from private accounts or the user's own stories. |
 
 It prints one JSON line. Everything lands in `downloads/<site>-<id>/` (or `downloads/local-<name>/`):
 
@@ -51,5 +52,10 @@ It prints one JSON line. Everything lands in `downloads/<site>-<id>/` (or `downl
 
 - No subtitles: say so. For YouTube, `agent-reach youtube transcribe <url>` can produce a transcript
   if the user has set up a Groq or OpenAI key (they enter it themselves with `agent-reach configure`).
-- Private, age-restricted or login-only videos: tell the user. Never ask for their password.
+- Private, age-restricted or login-only videos: if the user is signed in to that site in Chrome, rerun
+  with `--browser chrome`. The first time, macOS asks the user to allow access to "Chrome Safe Storage"
+  in the keychain; they click Allow themselves. If they are not signed in, tell them. Never ask for
+  their password.
+- Instagram: public Reels and posts download without signing in. Rate limits or "login required"
+  errors mean rerun with `--browser chrome`.
 - Downloads go in `downloads/`, which git ignores. Never commit video files.

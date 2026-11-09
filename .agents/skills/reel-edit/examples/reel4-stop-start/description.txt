@@ -1,0 +1,32 @@
+Stop making AI voiceovers that sound like a robot 🤖 It's 3 settings, not the app 🎬
+
+Everything in this video was made in VoiceStudio: free, open source, runs on YOUR laptop. Even the last line… that's my AI clone.
+
+The 3 fixes:
+1️⃣ Switch the engine. The default voice can't act. Pick an emotion engine (VoxCPM2, CosyVoice 3 or IndexTTS2) and write how it should sound: "(tired, whispering, about to cry)"
+2️⃣ Clone from the right clip. It copies HOW you talk, not just your voice. A flat clip = a flat voice, so record 10 seconds in the mood you want.
+3️⃣ Write for breathing. Dots… dashes — and pauses like [pause 500ms]. One long paragraph sounds like a robot reading.
+
+⚠️ Bonus: don't paste ElevenLabs tags like [excited]. VoiceStudio reads them out loud 😭
+
+🔗 github.com/debpalash/VoiceStudio
+(Links in captions aren't clickable, so copy it into your browser.)
+
+⚡ Easiest setup: open Claude Code and paste this:
+"Install the VoiceStudio app on this device and verify it works, following https://github.com/debpalash/VoiceStudio/blob/main/docs/install/agent.md"
+
+Or install it yourself:
+🍎 Mac (Apple Silicon): curl -fsSL https://voicestudio.sh/install | sh
+🪟 Windows 10/11 (PowerShell): irm https://voicestudio.sh/install.ps1 | iex
+🐧 Linux: same command as Mac
+
+The emotion engines are optional downloads in the app's Model Manager.
+
+Good to know:
+• The app is free (AGPL-3.0). Each voice model has its own licence, shown in the Model Manager. Check it before paid client work.
+• Only clone voices you have permission to use.
+• Not sponsored. Built by Palash Debnath (debpalash on GitHub).
+
+Save this for your next voiceover 🎙️
+
+#voicestudio #aivoice #voiceover #elevenlabs #aitools #contentcreator #opensource

@@ -1,0 +1,10 @@
+{
+ "ali_palm": [225, 1140],
+ "toon_palm": [390, 1540],
+ "toon_finger": [430, 1500],
+ "ali_finger": [330, 1420],
+ "ali_wave": [170, 950],
+ "toon_wave": [380, 1540],
+ "toon_thumbs": [380, 1560],
+ "ali_face": [540, 880]
+}

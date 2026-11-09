@@ -8,6 +8,7 @@ subtitles, so an AI agent can see what is on screen and read what is said.
 
 Usage: uv run --script watch.py SOURCE [--max-frames N] [--every SEC]
                                        [--start T] [--end T] [--width PX] [--lang en]
+                                       [--browser chrome]
 """
 
 import argparse
@@ -61,8 +62,9 @@ def fail(message):
     sys.exit(1)
 
 
-def download(url, out_root, lang):
-    """Download with yt-dlp (720p max). Returns (folder, video_path, info)."""
+def download(url, out_root, lang, browser=None):
+    """Download with yt-dlp (720p max). Returns (folder, video_path, info).
+    browser: use that browser's sign-ins (e.g. 'chrome'), for private or login-only videos."""
     base = [
         sys.executable, "-m", "yt_dlp", url,
         "--no-playlist",
@@ -73,6 +75,8 @@ def download(url, out_root, lang):
         "-o", str(out_root / "%(extractor_key)s-%(id)s" / "video.%(ext)s"),
         "--no-simulate", "--print", "after_move:filepath", "--quiet",
     ]
+    if browser:
+        base += ["--cookies-from-browser", browser]
     subs = ["--write-subs", "--write-auto-subs", "--sub-langs", f"{lang}.*,{lang}", "--sub-format", "vtt/best"]
     for cmd in (base + subs, base):  # if subtitles break the download, retry without them
         r = subprocess.run(cmd, capture_output=True, text=True)
@@ -131,6 +135,8 @@ def main():
     p.add_argument("--width", type=int, default=768, help="Frame width in pixels (default 768)")
     p.add_argument("--lang", default="en", help="Subtitle language (default en)")
     p.add_argument("--out", default="downloads", help="Output folder (default ./downloads)")
+    p.add_argument("--browser", help="Use this browser's sign-ins for private or login-only videos, "
+                                     "e.g. chrome, safari, firefox, or 'chrome:Profile 1'")
     p.add_argument("--check", action="store_true", help="Install/verify the tools, then exit")
     a = p.parse_args()
 
@@ -149,7 +155,7 @@ def main():
         folder.mkdir(parents=True, exist_ok=True)
     elif re.match(r"https?://", a.source):
         out_root.mkdir(parents=True, exist_ok=True)
-        folder, video, info = download(a.source, out_root, a.lang)
+        folder, video, info = download(a.source, out_root, a.lang, a.browser)
     else:
         fail(f"Not a URL and no such file: {a.source}")
 

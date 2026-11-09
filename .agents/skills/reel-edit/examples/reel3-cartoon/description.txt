@@ -1,0 +1,42 @@
+ElevenLabs is never going to sponsor me after this 😅
+
+VoiceStudio is a free, open-source voice studio that runs on YOUR laptop. No subscription, no account, and your voice never leaves your computer.
+
+What it does:
+🦜 Clones a voice from ~10 seconds of audio
+🍕 Designs a brand-new voice from a description ("old, deep, grumpy")
+🌍 Speaks and dubs in 600+ languages
+🎬 Dubs videos, transcribes, narrates audiobooks
+
+🔗 LINK: github.com/debpalash/VoiceStudio
+(Links in captions aren't clickable, so copy it into your browser.)
+
+HOW TO SET IT UP
+
+Easiest way, let Claude do it. Open Claude Code and paste:
+"Install the VoiceStudio app on this device and verify it works, following https://github.com/debpalash/VoiceStudio/blob/main/docs/install/agent.md"
+
+Or install it yourself:
+🍎 Mac (Apple Silicon, macOS 13.3+): download the DMG from the Releases page, or run in Terminal:
+curl -fsSL https://voicestudio.sh/install | sh
+🪟 Windows 10/11: download the installer from Releases, or run in PowerShell:
+irm https://voicestudio.sh/install.ps1 | iex
+🐧 Linux: same curl command as Mac (or DEB / Snap / AppImage)
+
+No GPU? It still works on your CPU, just slower. The first time, the app asks before it downloads a voice model (a couple of GB).
+
+GIVE CLAUDE THE TV REMOTE 📺
+1. Open VoiceStudio and leave it running
+2. In Terminal run:
+claude mcp add --transport http voicestudio http://localhost:3900/mcp/
+(or in VoiceStudio: Integrations → Claude Code → copy the config)
+3. Tell Claude: "Design a grumpy old man voice and make him say hi in 5 languages"
+
+Good to know:
+• The app is free (AGPL-3.0). Each voice model has its own license, shown in the app's Model Manager. The default model is for non-commercial use, so check before using it for paid client work.
+• Only clone voices you have permission to use.
+• Not sponsored. Built by Palash Debnath (debpalash on GitHub), go give the repo a ⭐
+
+The old man's voice: made in VoiceStudio. The cartoon: made with Claude.
+
+#voicestudio #elevenlabs #aitools #claudeai #opensource #voicecloning #aivoice #techtips

@@ -1,0 +1,53 @@
+{
+ "total": 20.56,
+ "lines": [
+  {
+   "id": "00-en-hook",
+   "tag": "EN",
+   "start": 0.3,
+   "end": 3.442,
+   "caption": "I speak five languages. I learned them ten seconds ago.",
+   "gloss": ""
+  },
+  {
+   "id": "01-es",
+   "tag": "ES",
+   "start": 3.892,
+   "end": 7.044,
+   "caption": "Hola, amigos. Ahora hablo español, sin estudiar nada.",
+   "gloss": "Hi friends. Now I speak Spanish. Zero studying."
+  },
+  {
+   "id": "02-ja",
+   "tag": "JA",
+   "start": 7.494,
+   "end": 10.492,
+   "caption": "こんにちは。今は日本語を話しています。",
+   "gloss": "Hello. Now I'm speaking Japanese."
+  },
+  {
+   "id": "03-fr",
+   "tag": "FR",
+   "start": 10.942,
+   "end": 13.803,
+   "caption": "Bonjour. Maintenant, je parle français. Évidemment.",
+   "gloss": "Hello. Now I speak French. Obviously."
+  },
+  {
+   "id": "04-zh-old",
+   "tag": "ZH",
+   "start": 14.253,
+   "end": 16.213,
+   "caption": "大家好。现在我说中文。",
+   "gloss": "Hi everyone. Now I speak Chinese."
+  },
+  {
+   "id": "05-en-punch",
+   "tag": "EN2",
+   "start": 16.763,
+   "end": 18.959,
+   "caption": "Jensen Huang loves Chinese fine shyt.",
+   "gloss": ""
+  }
+ ]
+}

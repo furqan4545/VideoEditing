@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0b0b0d; }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: "Inter", sans-serif; }
+
+      /* Ali: slow always-on zoom / whips + punch-ins */
+      #ali-cam, #ali-move, #ali-zoom { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #ali-zoom video, #freeze { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #ali-zoom video { object-fit: cover; }
+      #freeze-img { width: 1080px; height: 1920px; display: block; }
+
+      /* full-frame panels */
+      .panel { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 5; }
+      .panel .pin { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; display: flex; flex-direction: column; align-items: center;
+        background: radial-gradient(120% 75% at 50% 35%, #232327 0%, #0d0d10 72%); }
+      .panel .lbl { margin-top: 250px; padding: 0 60px; font-family: "League Gothic", sans-serif; font-size: 132px; line-height: 1; letter-spacing: 2px;
+        color: #ffffff; text-align: center; }
+      .panel .lbl b { color: #ffd54a; font-weight: 400; }
+      .panel .card { margin-top: 56px; width: 930px; border-radius: 26px; box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.12); }
+      .panel .sub { margin-top: 40px; font-weight: 800; font-size: 46px; color: #d4d4dc; text-align: center; padding: 0 60px; }
+
+      /* the robotic "before": a plain, default-looking generator on white */
+      .panel.plain .pin { background: #f4f4f4; justify-content: center; }
+      .tts { width: 920px; background: #ffffff; border: 2px solid #d6d6d6; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); }
+      .ttsbar { display: flex; align-items: center; justify-content: space-between; height: 84px; padding: 0 30px; background: #ececec; border-bottom: 2px solid #d6d6d6;
+        font-family: Arial, sans-serif; font-size: 34px; color: #555; }
+      .ttsbar i { font-style: normal; background: #8a8a8a; color: #fff; padding: 8px 22px; border-radius: 8px; font-size: 30px; }
+      .ttstext { padding: 40px 40px 20px; font-family: Arial, sans-serif; font-size: 50px; line-height: 1.32; color: #333; }
+      .wave { display: flex; gap: 8px; align-items: center; height: 120px; padding: 0 40px 30px; }
+      .wave b { flex: 1; height: 46px; background: #9a9a9a; border-radius: 4px; }
+      .stamp { position: absolute; left: 50%; top: 1340px; width: 640px; margin-left: -320px; text-align: center; font-family: "League Gothic", sans-serif;
+        font-size: 150px; line-height: 1.1; letter-spacing: 4px; border: 10px solid; border-radius: 22px; }
+      .stamp.bad { color: #e5383b; border-color: #e5383b; background: rgba(255, 255, 255, 0.86); }
+      .stamp.good { color: #ffd54a; border-color: #ffd54a; background: rgba(0, 0, 0, 0.55); top: 1420px; }
+
+      /* the cinematic "after": letterbox, trailer titles */
+      .panel.trailer .pin { background: radial-gradient(90% 60% at 50% 48%, #1b1a17 0%, #050505 75%); justify-content: center; }
+      .bar { position: absolute; left: 0; width: 1080px; height: 330px; background: #000; }
+      .bar.top { top: 0; }
+      .bar.bottom { bottom: 0; }
+      .tline { position: absolute; left: 0; width: 1080px; top: 860px; text-align: center; padding: 0 50px; font-family: "EB Garamond", serif; font-weight: 800;
+        font-size: 84px; line-height: 1.2; letter-spacing: 8px; color: #f3e6c4; text-shadow: 0 0 40px rgba(255, 200, 120, 0.35); opacity: 0; }
+      .tline.last { font-size: 100px; letter-spacing: 10px; color: #ffd54a; }
+
+      /* engine list */
+      .list { margin-top: 70px; width: 920px; display: flex; flex-direction: column; gap: 22px; }
+      .row { display: flex; justify-content: space-between; align-items: center; padding: 34px 40px; border-radius: 22px; background: #1d1d22;
+        border: 4px solid #2c2c33; font-weight: 800; font-size: 50px; color: #ffffff; }
+      .row em { font-style: normal; font-size: 40px; color: #22c55e; }
+      .row.off { opacity: 0.55; }
+      .row.off span { text-decoration: line-through; }
+      .row.off em { color: #e5383b; }
+
+      /* script / editor cards */
+      .term { margin-top: 80px; width: 940px; background: #17171b; border-radius: 26px; overflow: hidden; box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.12); }
+      .tbar { height: 66px; display: flex; align-items: center; gap: 14px; padding: 0 26px; background: #24242a; }
+      .tbar i { width: 20px; height: 20px; border-radius: 50%; background: #ff5f57; }
+      .tbar i:nth-child(2) { background: #febc2e; }
+      .tbar i:nth-child(3) { background: #28c840; }
+      .tbar span { margin-left: auto; color: #9b9ba4; font-weight: 700; font-size: 30px; }
+      .tbody { padding: 44px 44px 54px; color: #f1f1f3; font-family: "JetBrains Mono", monospace; font-weight: 600; font-size: 54px; line-height: 1.45; }
+      .tbody u { text-decoration: none; color: #ffd54a; }
+      .tbody s { text-decoration: none; color: #ff5a5f; background: rgba(229, 56, 59, 0.18); border-radius: 8px; padding: 0 6px; }
+      .bubble { position: absolute; left: 50%; top: 1250px; width: 820px; margin-left: -410px; text-align: center; padding: 26px 30px; border-radius: 30px;
+        background: #e5383b; color: #ffffff; font-family: "League Gothic", sans-serif; font-size: 104px; line-height: 1; letter-spacing: 2px; }
+
+      /* cards above the head */
+      .chip { position: absolute; left: 0; width: 1080px; text-align: center; z-index: 6; }
+      .chip.row0 { top: 196px; }
+      .chip.row1 { top: 330px; }
+      .chip span { display: inline-block; padding: 12px 36px 4px; border-radius: 18px; font-family: "League Gothic", sans-serif; font-size: 104px; line-height: 1;
+        letter-spacing: 2px; box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3); }
+      .chip.cy span { background: #ffd54a; color: #121212; }
+      .chip.cw span { background: #ffffff; color: #121212; }
+      .chip.cr span { background: #e5383b; color: #ffffff; }
+      .chip.cg span { background: #22c55e; color: #08130b; }
+
+      /* serif captions */
+      .cap { position: absolute; left: 50px; width: 980px; top: 1480px; text-align: center; z-index: 7; }
+      .capbox { display: inline-block; padding: 14px 30px 18px; border-radius: 24px; background: rgba(10, 10, 12, 0.8);
+        color: #ffffff; font-family: "EB Garamond", serif; font-weight: 700; font-size: 66px; line-height: 1.12; }
+      .capbox span { display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="__TOTAL__" data-width="1080" data-height="1920" data-motion-blur="on">
+      <div id="ali-cam"><div id="ali-move"><div id="ali-zoom">
+        __VIDEOS__
+        <div id="freeze" class="clip" data-start="__FREEZE_START__" data-duration="__FREEZE_DUR__" data-track-index="0" data-motion-blur="off"><img id="freeze-img" src="assets/freeze_end.png" /></div>
+      </div></div></div>
+
+      __PANELS__
+
+      __CHIPS__
+
+      __CAPS__
+
+      <!-- the whole soundtrack: Ali + VoiceStudio demo voices + music + effects, mixed in sound/mix.py -->
+      <audio id="mix" class="clip" data-start="0" data-duration="__TOTAL__" data-track-index="9" data-volume="1" src="assets/mix.wav"></audio>
+    </div>
+    <script>
+      (function () {
+        const C = __CFG__;
+        const tl = gsap.timeline({ paused: true });
+
+        // --- always-on subtle zoom on Ali, turning around at every take; a slow push on the freeze-frame
+        tl.set("#ali-cam", { transformOrigin: "540px 900px" }, 0);
+        tl.set("#ali-move", { transformOrigin: "540px 900px" }, 0);
+        C.SEGS.forEach(([a, b], i) => {
+          const z0 = i % 2 ? 1.045 : 1.0, z1 = i % 2 ? 1.0 : 1.045;
+          tl.fromTo("#ali-cam", { scale: z0 }, { scale: z1, duration: Math.min(b - a, 4.2), ease: "sine.inOut", immediateRender: i === 0 }, a);
+        });
+        tl.fromTo("#freeze-img", { scale: 1.0 }, { scale: 1.1, duration: C.FREEZE[1] - C.FREEZE[0], ease: "sine.inOut", transformOrigin: "540px 860px" }, C.FREEZE[0]);
+        tl.fromTo("#ali-move", { scale: 1.18 }, { scale: 1, duration: 0.4, ease: "expo.out", immediateRender: false }, C.FREEZE[0]);
+
+        // --- whips and punch-ins hide the take changes that no panel covers
+        C.WHIPS.forEach(([tc, dir]) => {
+          tl.to("#ali-move", { x: -210 * dir, scale: 1.42, duration: 0.11, ease: "power3.in" }, tc - 0.11);
+          tl.fromTo("#ali-move", { x: 210 * dir, scale: 1.42 }, { x: 0, scale: 1, duration: 0.24, ease: "power3.out", immediateRender: false }, tc);
+        });
+        C.PUNCHES.forEach((tc) => {
+          tl.to("#ali-move", { scale: 1.3, duration: 0.1, ease: "power2.in" }, tc - 0.1);
+          tl.fromTo("#ali-move", { scale: 1.3 }, { scale: 1, duration: 0.38, ease: "expo.out", immediateRender: false }, tc);
+        });
+
+        // --- panels slide up over the frame and leave upward; inner pieces have their own beats
+        C.PANELS.forEach(([id, a, b]) => {
+          const pin = "#p-" + id + " .pin";
+          tl.fromTo(pin, { y: 1920, rotation: 2.5 }, { y: 0, rotation: 0, duration: 0.3, ease: "expo.out" }, a);
+          tl.to(pin, { y: -1920, duration: 0.24, ease: "power3.in" }, b - 0.24);
+        });
+        const pan = (id) => C.PANELS.find((p) => p[0] === id);
+        // robotic: a flat waveform that barely moves, then the stamp
+        const bars = document.querySelectorAll("#p-plain .wave b");
+        const flat = { t: 0 };
+        tl.fromTo(flat, { t: 0 }, { t: 1, duration: C.BAD[1] - C.BAD[0], ease: "none", onUpdate: () => {
+          bars.forEach((el, k) => { el.style.transform = "scaleY(" + (0.8 + 0.2 * Math.abs(Math.sin(flat.t * 40 + k * 0.9))).toFixed(3) + ")"; });
+        } }, C.BAD[0]);
+        tl.fromTo("#stamp-bad", { scale: 2.4, rotation: -14, opacity: 0 }, { scale: 1, rotation: -8, opacity: 1, duration: 0.22, ease: "power4.in" }, C.BAD[0] + 1.4);
+        // cinematic: letterbox closes in, a title per phrase, the last one hits
+        const tr = pan("trailer");
+        tl.fromTo("#p-trailer .bar.top", { y: -330 }, { y: 0, duration: 0.5, ease: "power3.out" }, tr[1] + 0.1);
+        tl.fromTo("#p-trailer .bar.bottom", { y: 330 }, { y: 0, duration: 0.5, ease: "power3.out" }, tr[1] + 0.1);
+        C.TRAILER.forEach(([k, t], i) => {
+          const end = i + 1 < C.TRAILER.length ? C.TRAILER[i + 1][1] : C.GOOD_END + 0.3;
+          const last = i === C.TRAILER.length - 1;
+          tl.fromTo("#tt" + k, { opacity: 0, scale: last ? 1.22 : 1.12 },
+            { opacity: 1, scale: 1, duration: last ? 0.35 : 0.6, ease: last ? "power4.in" : "power2.out" }, t);
+          tl.to("#tt" + k, { scale: last ? 1.06 : 1.04, duration: Math.max(0.2, end - t - 0.4), ease: "none" }, t + 0.6);
+          if (!last) tl.to("#tt" + k, { opacity: 0, duration: 0.18, ease: "power1.in" }, end - 0.16);
+        });
+        tl.fromTo("#stamp-good", { scale: 2.2, rotation: 12, opacity: 0 }, { scale: 1, rotation: 6, opacity: 1, duration: 0.22, ease: "power4.in" }, C.GOOD_END - 0.25);
+        // engines: rows land one by one, VoxCPM2 lights up when he says it
+        const en = pan("engines");
+        tl.fromTo("#pl-engines", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.26, ease: "power3.out" }, en[1] + 0.07);
+        tl.fromTo("#pb-engines .row", { x: 120, opacity: 0 }, { x: 0, opacity: 1, duration: 0.25, stagger: 0.08, ease: "power3.out" }, en[1] + 0.15);
+        tl.to("#row-vox", { scale: 1.07, backgroundColor: "#3a2f0a", borderColor: "#ffd54a", duration: 0.2, ease: "back.out(3)" }, C.VOX);
+        tl.fromTo("#ps-engines", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, C.VOX + 0.5);
+        // clone
+        const cl = pan("clone");
+        tl.fromTo("#pl-clone", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.26, ease: "power3.out" }, cl[1] + 0.07);
+        tl.fromTo("#pb-clone", { scale: 0.9 }, { scale: 1.04, duration: cl[2] - cl[1], ease: "sine.out" }, cl[1]);
+        tl.fromTo("#ps-clone", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.25, ease: "power3.out" }, cl[1] + 0.9);
+        // script: lines appear, the pause markers light up
+        const sc = pan("script");
+        tl.fromTo("#pl-script", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.26, ease: "power3.out" }, sc[1] + 0.07);
+        tl.fromTo("#pb-script", { scale: 0.9 }, { scale: 1.03, duration: sc[2] - sc[1], ease: "sine.out" }, sc[1]);
+        tl.fromTo("#pb-script u", { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.18, stagger: 0.16, ease: "back.out(3)" }, C.SCRIPT_T[0]);
+        // excited: the tag shakes, the bubble pops when the app says it
+        const ex = pan("excited");
+        tl.fromTo("#pl-excited", { y: 70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.26, ease: "power3.out" }, ex[1] + 0.07);
+        tl.fromTo("#pb-excited", { scale: 0.92 }, { scale: 1.03, duration: ex[2] - ex[1], ease: "sine.out" }, ex[1]);
+        tl.fromTo("#pb-excited s", { x: 0 }, { x: 10, duration: 0.05, repeat: 7, yoyo: true, ease: "none" }, C.EXC[0]);
+        tl.fromTo("#bubble", { scale: 0.3, opacity: 0, rotation: -8 }, { scale: 1, opacity: 1, rotation: -3, duration: 0.3, ease: "back.out(2.6)" }, C.EXC[0] + 0.45);
+
+        // --- cards above the head pop in, breathe, pop out
+        C.CHIPS.forEach(([id, a, b], i) => {
+          const S = "#k-" + id + " span", rot = i % 2 ? 2 : -2;
+          if (a > 0) tl.fromTo(S, { scale: 0.3, rotation: rot * 4, opacity: 0 }, { scale: 1, rotation: rot, opacity: 1, duration: 0.28, ease: "back.out(2.4)" }, a);
+          else tl.set(S, { rotation: rot }, 0);
+          tl.to(S, { scale: 1.06, duration: Math.max(0.1, b - a - 0.42), ease: "sine.inOut" }, a + 0.28);
+          tl.to(S, { scale: 0.5, opacity: 0, duration: 0.12, ease: "power2.in" }, b - 0.12);
+        });
+
+        // --- captions: pop in, the spoken word lights up
+        C.CAPS.forEach(([i, t0, words]) => {
+          if (t0 > 0.01) tl.fromTo("#cap" + i + " .capbox", { scale: 0.86, y: 14 }, { scale: 1, y: 0, duration: 0.14, ease: "back.out(2)" }, t0);
+          words.forEach(([k, a, b], j) => {
+            tl.set("#cw" + i + "_" + k, { color: "#ffd54a" }, Math.max(0, a));
+            if (j < words.length - 1) tl.set("#cw" + i + "_" + k, { color: "#ffffff" }, b);
+          });
+        });
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>
