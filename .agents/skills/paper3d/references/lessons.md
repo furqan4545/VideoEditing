@@ -5,7 +5,8 @@
 - People were legs only: he wants the full body (now the `person` model).
 - Show a magnet or any object whole first, then zoom inside it for the explanation.
 - Do not hold an extreme close-up for long; show the full process so the viewer is not lost. v1 spent 22 s at macro scale.
-- Captions: he wants the Apple SF caption style of reels 12 and 13 (now the kit's default). v1's grey word-by-word captions were "ugly".
+- Captions: first he called v1's captions ugly and asked for the Apple style of reels 12 and 13; later the same day: "actually your black captions are perfect". They are now the `simple-storytell-caption` skill and the kit's default.
+- "you fucking wrote instructions in the video, slowing down, drawing big ... this is fucking non sense": no footnotes or disclaimers on screen. The footnote was removed from reel 15 by re-rendering only the frames that showed it (`tools/partial_rerender.sh` in that project).
 - Music was "still fucking loud" at a -22 LUFS bed with an 11 dB duck. v2 used a -28 LUFS bed (music about 16 LU under the voice).
 - He could not find the delivered video: copy it to `~/Downloads`, reveal it in Finder, send the file card, and paste the description into the reply.
 
@@ -14,7 +15,7 @@
   the camera pose where one sequence hands over to the next and stage each sequence between its two poses.
 - A walk is a function of distance: one gait cycle per 1.44 m, so feet never slide; brake with a damped spring.
 - For "this happens 58,000 times a second": animate a visible 9 to 12 cycles a second and let the shutter blur the tips; show slow, clear versions first.
-- Put the few on-screen words in the lower third (y 1380 to 1500) unless the subject is there; one footnote for "Slowed down and drawn bigger".
+- Put the few on-screen words in the lower third (y 1380 to 1500) unless the subject is there. No footnotes, no disclaimers.
 - The key light turns with the camera's azimuth (always upper left front of the camera), so every shot is lit the same way.
 - Hide far-away places by time windows; at tag scale lay `macropaper` under the subject and hide the bag (see `examples/reel15/world.js`).
 - Things that must be seen through cloth or a wall: draw them over it (depthTest off or a few mm outside) with a soft halo.

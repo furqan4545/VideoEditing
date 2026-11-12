@@ -8,6 +8,7 @@ SKILL="$(cd "$(dirname "$0")/.." && pwd)"; P="$1"; export PATH="$HOME/.local/bin
 mkdir -p "$P"/{film/assets,film/shots,film/fonts,film/img,film/footage,film/vendor,tools,look,out,sound,cut}
 put() { [ -e "$2" ] || cp "$1" "$2"; }
 put "$SKILL/kit/kit.js" "$P/film/kit.js"; put "$SKILL/kit/comp.html" "$P/film/comp.html"
+put "$SKILL/../simple-storytell-caption/story_caption.js" "$P/film/story_caption.js"          # the default captions (simple story tell caption)
 put "$SKILL/kit/world.template.js" "$P/film/world.js"; put "$SKILL/kit/timing.template.js" "$P/film/timing.js"; put "$SKILL/kit/thumb.template.js" "$P/film/thumb.js"
 put "$SKILL/kit/assets.index.js" "$P/film/assets/index.js"; put "$SKILL/kit/shots.index.js" "$P/film/shots/index.js"; put "$SKILL/kit/shot.template.js" "$P/film/shots/10_demo.js"
 for f in "$SKILL"/models/*.js; do put "$f" "$P/film/assets/$(basename "$f")"; done
