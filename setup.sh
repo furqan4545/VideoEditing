@@ -143,7 +143,12 @@ if command -v swiftc >/dev/null; then
   swiftc -O "$REPO/.agents/skills/text-behind/scripts/personmask.swift" -o "$HOME/.local/share/text-behind/personmask"
 fi
 
-# 13. Make this repo's other skills work in any folder on this Mac
+# 13. paper3d: 3D explainer films. Builds three.js + its addons into one script (~/.cache/paper3d/three.bundle.js),
+#     which every new film project copies. Needs node/npm (step 4) and onetake (step 8) for rendering.
+"$REPO/.agents/skills/paper3d/scripts/build_three.sh" >/dev/null ||
+  echo "Note: could not build the three.js bundle for paper3d. Run: .agents/skills/paper3d/scripts/build_three.sh"
+
+# 14. Make this repo's other skills work in any folder on this Mac
 #    (~/.agents/skills is read by Codex and others, ~/.claude/skills by Claude Code)
 for skill in "$REPO"/.agents/skills/*/; do
   name="$(basename "$skill")"

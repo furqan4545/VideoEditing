@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>paper3d film</title>
+<style>
+  html, body { margin: 0; background: #111; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #f4f1ea; }
+  #gl { position: absolute; left: 0; top: 0; }
+  #overlay { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; pointer-events: none; }
+  #grain { position: absolute; inset: 0; mix-blend-mode: multiply; opacity: 0.55; background-size: 512px 512px; }
+  #lsvg { position: absolute; left: 0; top: 0; }
+  #lsvg .lead { stroke: #2a2c30; stroke-width: 1.6; fill: none; }
+  #lsvg .dot { fill: #2a2c30; }
+  #labels { position: absolute; inset: 0; }
+  @font-face { font-family: "SF Reel"; src: url("fonts/SFNS.ttf") format("truetype"); font-weight: 1 1000; font-style: normal; }
+  @font-face { font-family: "NY Reel"; src: url("fonts/NewYorkItalic.ttf") format("truetype"); font-weight: 400 1000; font-style: italic; }
+  .lab { position: absolute; font-family: "SF Reel", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; color: #24262a; white-space: normal; line-height: 1.22; transform: translate(-50%, -50%); text-align: center; }
+  .lab.al { transform: translate(0, -50%); text-align: left; }
+  .lab.ar { transform: translate(-100%, -50%); text-align: right; }
+  .lab.name { font-size: 23px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #3a3d42; }
+  .lab.note { font-size: 31px; font-weight: 400; letter-spacing: 0.005em; }
+  .lab.big { font-size: 64px; font-weight: 600; letter-spacing: -0.01em; color: #0f1216; font-variant-numeric: tabular-nums; }
+  .lab.mid { font-size: 42px; font-weight: 600; letter-spacing: -0.005em; color: #0f1216; font-variant-numeric: tabular-nums; }
+  .lab.small { font-size: 22px; font-weight: 400; color: #7a7d84; letter-spacing: 0.01em; }
+  .lab b { font-weight: 600; }
+  /* captions: Ali's Apple style (one centred line, SF 600, one key word in blue New York italic) */
+  .cap { position: absolute; left: 100px; width: 880px; top: 286px; height: 80px; text-align: center; white-space: nowrap; font-family: "SF Reel", -apple-system, sans-serif; font-size: 60px; font-weight: 600; line-height: 80px; letter-spacing: -0.01em; opacity: 0; }
+  .cap.dark { color: #0f1216; }
+  .cap.light { color: #ffffff; text-shadow: 0 2px 14px rgba(0,0,0,0.55), 0 0 2px rgba(0,0,0,0.5); }
+  .cap .key { font-family: "NY Reel", ui-serif, serif; font-style: italic; font-weight: 600; letter-spacing: 0; color: #1a8cff; font-size: 1.07em; }
+  .cap.light .key { color: #7cc0ff; }
+  #hud { position: fixed; left: 8px; bottom: 8px; color: #0f0; font: 12px monospace; background: rgba(0,0,0,.6); padding: 4px 6px; display: none; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="overlay"></div></div>
+<div id="hud"></div>
+<script src="vendor/three.bundle.js"></script>
+<script src="motion.js"></script>
+<script src="timing.js" onerror="window.TIMING=window.TIMING||null"></script>
+<script src="kit.js"></script>
+<script src="assets/index.js"></script>
+<script>if (new URLSearchParams(location.search).has('asset')) window.ASSET_FILES = [...new Set([...new URLSearchParams(location.search).get('asset').split(','), ...(new URLSearchParams(location.search).get('needs') || '').split(',').filter(Boolean)])];</script>
+<script src="world.js"></script>
+<script src="shots/index.js"></script>
+<script src="thumb.js" onerror="void 0"></script>
+<script>{ const q = new URLSearchParams(location.search); if (q.has('only')) window.SHOT_FILES = ['00_hook', ...q.get('only').split(',').filter(Boolean), '90_end']; }</script>
+<script>
+(function () {
+  const K = window.KIT, q = new URLSearchParams(location.search);
+  window.__meta = { dur: 0 };
+  window.__ready = (async () => {
+    K.init();
+    await (window.loadAssets ? window.loadAssets() : null);
+    if (q.has('asset')) {                                             // preview one model alone on the paper: comp.html?asset=legs&opts={...}
+      const A = K.make(q.get('asset'), q.has('opts') ? JSON.parse(q.get('opts')) : {}); K.station('P', [0, 0, 0], 0).add(A.group); K.w = { a: A };
+      const v = A.view || {}, l = v.l || [0, 0.5, 0], d = v.d || 3; K.noCaps = true; K.dur = 12;
+      const views = v.keys || [{ az: 0.6, el: 0.2 }, { az: -0.5, el: 0.12 }, { az: 1.45, el: 0.1 }, { az: 0.3, el: 0.9 }, { az: 0.5, el: 0.25, d: d * 0.4, l: v.close || l }, { az: -0.9, el: 0.3, d: d * 0.4, l: v.close || l }];
+      views.forEach((k, i) => K.cam.key(i * 2, Object.assign({ st: 'P', l, d, fov: 24, hand: 0, ease: 'linear' }, k)));
+      K.cam.keys.slice().forEach((k, i, a) => { if (i) { const h = Object.assign({}, a[i - 1]); delete h._r; h.t = k.t - 0.001; K.cam.keys.push(h); } });   // hold each view, then jump
+      K.shot({ id: 'preview', t0: 0, t1: 99, update(t, u) { if (A.demo) A.demo(A.s, t, u); } });
+    } else {
+    if (window.buildWorld) window.buildWorld(K);
+    await (window.loadShots ? window.loadShots() : null);
+    }
+    await Promise.all(window.ASSET_PROMISES || []);
+    try { await Promise.all([document.fonts.load('600 60px "SF Reel"'), document.fonts.load('italic 600 60px "NY Reel"')]); } catch (e) {}
+    K.freeze();
+    K.cam.keys.sort((a, b) => a.t - b.t);
+    K.dur = +(q.get('dur') || 0) || (q.has('asset') ? 12 : 0) || (window.TIMING && TIMING.dur) || 20; window.__meta.dur = K.dur;
+    if (q.has('test') && window.testScene) window.testScene(K, q.get('test'));
+    if (q.has('thumb') && window.thumbScene) await window.thumbScene(K);
+    await K.seek(+(q.get('t') || 0));
+    if (q.has('play')) { const t0 = performance.now(), s0 = +(q.get('t') || 0); const loop = async () => { await K.seek((s0 + (performance.now() - t0) / 1000) % K.dur); requestAnimationFrame(loop); }; loop(); }
+    if (q.has('hud')) { const h = document.getElementById('hud'); h.style.display = 'block'; setInterval(() => { h.textContent = 't ' + (K.t || 0).toFixed(2) + ' d ' + (K.dist || 0).toPrecision(3); }, 200); }
+  })();
+  window.__seek = (t) => K.seek(t);
+  window.__events = () => K.events.slice().sort((a, b) => a.t - b.t);
+  window.__motion = (a, b) => K.motion(a, b);
+})();
+</script>
+</body>
+</html>
