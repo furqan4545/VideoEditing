@@ -82,7 +82,8 @@ positive swings the camera toward +X), elevation `el` (radians above the horizon
 to the centre while the distance closes), `ap` depth-of-field amount (0 = off, about 0.0008 to 0.002 for macro),
 `hand` (0..1, the operator's float; keep 1), `lift` / `swing` for arcs. The camera is never frozen.
 Labels: `u.label(id, html, { at: worldVector3 | screen: [x, y], dx, dy, kind: 'name'|'note'|'mid'|'big'|'small', o })`.
-Frame: 1080 x 1920. Captions (Ali's Apple style, built into the kit; key words from `TIMING.keys`) sit at y 286 to 366: keep that band clean. Keep everything that matters inside
+Frame: 1080 x 1920. Captions (the simple story tell caption, loaded by the kit) sit at y 268 to 384: keep that band clean.
+No footnotes or disclaimers on screen ("Slowed down and drawn bigger" was cut from reel 15): labels are for content only. Keep everything that matters inside
 x 100 to 980 and y 420 to 1500 (Instagram covers the rest).
 
 ## Moving a model, and things that must stay changed

@@ -125,7 +125,6 @@
   K.shot({ id: 'inside', t0: T0, t1: T1, pre: 0, post: 0.7, update(t, u) {
     const w = u.w, tg = w.tag, loc = K.stations.T.g.worldToLocal(K.pose.l.clone());   // the camera's look-at in the tag's frame
     // labels that outlive the handoff by a few frames (they fade, nothing else of this shot runs after T1)
-    u.label('c-foot', 'Slowed down and drawn bigger', { screen: [540, 1490], kind: 'small', o: win(t, T0, T0 + 0.3, T1 + 0.05, T1 + 0.35) });
     u.label('c-pin', 'Remember this magnet', { screen: [540, 1365], kind: 'note', o: win(t, 34.98, 35.22, T1 + 0.25, T1 + 0.55) });
     if (t > T1) return;
 

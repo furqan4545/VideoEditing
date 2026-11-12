@@ -1,6 +1,6 @@
 ---
 name: paper3d
-description: Make an animated 3D explainer film for a reel (how-it-works, science, "inside the device") as ONE continuous camera take in a real 3D world on white paper - real objects with real materials and soft shadows, built in code with three.js and rendered with onetake's motion-blur renderer. Ships a camera/world kit, a library of ready 3D models (full-body walking person, shop security gates, security tag with strip and magnet, magnetic field lines, shopping bag, receipt, cheese, keys, coin battery, chip, checkout, jeans, pay point, washing machine, calendar, tool wall, tray, jacket, shoes, belt, ruler on a desk, swing, prints of real web pages, a print that plays Ali's footage), Ali's Apple-style captions, a thumbnail scene and the reel 15 film as a worked example. Use when Ali asks for a 3D / animated / cinematic explainer, "like reel 15", "the supermarket gate video", a 3D thumbnail, or wants a device or a process shown from the inside with the camera diving in.
+description: Make an animated 3D explainer film for a reel (how-it-works, science, "inside the device") as ONE continuous camera take in a real 3D world on white paper - real objects with real materials and soft shadows, built in code with three.js and rendered with onetake's motion-blur renderer. Ships a camera/world kit, a library of ready 3D models (full-body walking person, shop security gates, security tag with strip and magnet, magnetic field lines, shopping bag, receipt, cheese, keys, coin battery, chip, checkout, jeans, pay point, washing machine, calendar, tool wall, tray, jacket, shoes, belt, ruler on a desk, swing, prints of real web pages, a print that plays Ali's footage), Ali's simple story tell captions, a thumbnail scene and the reel 15 film as a worked example. Use when Ali asks for a 3D / animated / cinematic explainer, "like reel 15", "the supermarket gate video", a 3D thumbnail, or wants a device or a process shown from the inside with the camera diving in.
 ---
 
 # paper3d: a 3D explainer film on white paper, in one take
@@ -21,8 +21,9 @@ onetake is PolyForm Noncommercial: personal reels are fine, tell Ali before a fi
    close-up. ("first show it full then zoom in side it for explanation")
 3. **No long extreme close-ups.** A macro shot lasts a few seconds, then the camera pulls back to a view that shows
    the parts together, so the viewer always knows where they are and sees the full process. Alternate close and wide.
-4. **Captions are his Apple style** and are built into the kit: SF 600, one centred line, one key word per chunk in
-   blue New York italic. Set the key words in `TIMING.keys`. Do not design another caption look.
+4. **Captions are the "simple story tell caption"** (the black captions of reel 15, which he called perfect): a few
+   words at a time, spoken words near-black, coming words grey, no bold, no movement. The kit loads it by default from
+   the `simple-storytell-caption` skill. Do not design another caption look.
 5. **Voice on top, music low.** Music stem at least 15 LU under the voice stem; check the loudest music moments one
    by one. His raw voice gets only the 1.10x speed-up and one gain per line.
 6. **One take, no cuts.** Every change of place or scale is a camera move (dive, pull-out, whip, a ride on something
@@ -30,6 +31,8 @@ onetake is PolyForm Noncommercial: personal reels are fine, tell Ali before a fi
 7. **The look:** white paper ground and sky, black / white / grey objects with real materials and soft shadows, colour
    only for meaning (in reel 15: blue = the magnet's field, purple = the gate's field, orange = the strip's answer,
    green / red = the gate's light). Plain on-screen words, never bold, never tilted, never moving.
+   **No instructions or disclaimers on screen**: never a footnote like "Slowed down and drawn bigger" (he called it
+   nonsense). On-screen words are for the content only: a part's name, a number.
 8. **Technical but simple:** keep the full real mechanism, in 5th-grade words; draw the invisible things (fields,
    forces) as clean thin lines.
 9. **Keep the build small.** Reel 15 ran 29 agents and used up his credits mid-edit. Reuse the models here; build a
@@ -64,7 +67,7 @@ It never overwrites a file, so re-running it only adds what is missing.
    as a start; follow the sfx-cloud, earshot and real-sfx skills and rule 5).
 6. **Render and join:** `tools/assemble.sh v1` (about 2.5 frames a second on 6 to 7 workers: say the estimate first; 95 s
    took 18 minutes). Then scan for accidental jumps:
-   `ffmpeg -i out/reelN_v1.mp4 -vf "select='gt(scene,0.25)',metadata=print:file=-" -an -f null -` and look at each hit.
+   `ffmpeg -i out/film_v1.mp4 -vf "select='gt(scene,0.25)',metadata=print:file=-" -an -f null -` and look at each hit.
 7. **Thumbnail:** edit `film/thumb.js`, render `tools/still.py out/thumb.png 0.5 "thumb=1&only="`. Models only, no photo of Ali
    unless he asks.
 
@@ -87,5 +90,5 @@ It never overwrites a file, so re-running it only adds what is missing.
 - At tag scale put clean paper under the subject (`macropaper`) and hide what surrounds it, or the close-up sits on a
   yellow cheese inside a grey bag. Reel 15's `world.js` does it from the camera distance.
 - A white object on white paper needs form: slightly different whites, a darker part, a seam, and its shadow.
-- Captions sit at y 286 to 366. Keep subjects below y 430 and inside x 100 to 980, y up to 1500.
+- Captions sit at y 268 to 384. Keep subjects below y 430 and inside x 100 to 980, y up to 1500.
 - Render from a snapshot copy of `film/` if you keep editing while it renders (workers reload the page every 150 frames).

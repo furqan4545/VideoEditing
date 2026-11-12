@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>simple story tell caption</title>
+<style>html,body{margin:0;background:#222}#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:#f4f1ea}
+#dark{position:absolute;left:0;top:0;width:1080px;height:1920px;background:linear-gradient(160deg,#3b4a2a,#1b1f25 60%,#5a4a22);display:none}</style></head>
+<body><div id="stage"><div id="dark"></div><div id="overlay" style="position:absolute;inset:0"></div></div>
+<script src="story_caption.js"></script>
+<script>
+// demo.html?t=1.2            dark text on paper      demo.html?t=1.2&theme=light   white text over footage
+const q = new URLSearchParams(location.search), theme = q.get('theme') || 'dark';
+const WORDS = [['How', 0.20, 0.42, 'L1'], ['does', 0.42, 0.60, 'L1'], ['the', 0.60, 0.72, 'L1'], ['gate', 0.72, 1.02, 'L1'], ['know', 1.02, 1.30, 'L1'], ['that', 1.30, 1.48, 'L1'], ['you', 1.48, 1.60, 'L1'], ['did', 1.60, 1.78, 'L1'], ['not', 1.78, 2.00, 'L1'], ['pay?', 2.00, 2.45, 'L1'],
+  ['It', 2.80, 2.95, 'L2'], ['does', 2.95, 3.15, 'L2'], ['not', 3.15, 3.38, 'L2'], ['know.', 3.38, 3.80, 'L2'], ['It', 4.10, 4.24, 'L2'], ['only', 4.24, 4.52, 'L2'], ['listens', 4.52, 4.95, 'L2'], ['for', 4.95, 5.10, 'L2'], ['a', 5.10, 5.18, 'L2'], ['tag.', 5.18, 5.60, 'L2']];
+if (theme === 'light') document.getElementById('dark').style.display = 'block';
+StoryCaption.mount(document.getElementById('overlay')); StoryCaption.build(WORDS);
+window.__meta = { dur: 6 }; window.__ready = Promise.resolve(); window.__seek = t => StoryCaption.draw(t, { theme });
+window.__seek(+(q.get('t') || 1.2));
+</script></body></html>

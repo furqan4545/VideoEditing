@@ -95,6 +95,5 @@
     u.label('d-push', 'About 93 pushes in one burst', { screen: [540, 1448], kind: 'note', o: fade(44.0, 44.3, 45.8, 46.1) });
     u.label('d-silent', 'The gate is silent more than 85% of the time', { screen: [540, 1400], kind: 'note', o: fade(47.0, 47.25, 48.0, 48.25) });
     u.label('d-field', 'Not a sound. A magnetic field.', { screen: [540, 1400], kind: 'note', o: fade(52.5, 52.8, 54.0, 54.3) });
-    u.label('d-foot', 'Slowed down and drawn bigger', { screen: [540, 1490], kind: 'small', o: Math.max(fade(41.0, 41.3, 46.2, 46.5), fade(48.6, 48.9, 53.6, 53.9)) });
   } });
 })();

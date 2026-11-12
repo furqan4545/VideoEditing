@@ -214,12 +214,17 @@
       n.ln.setAttribute('d', `M${ax.toFixed(1)} ${ay.toFixed(1)} L${ex.toFixed(1)} ${ey.toFixed(1)}`); n.ln.style.opacity = op * 0.9; n.dot.setAttribute('cx', ax); n.dot.setAttribute('cy', ay); n.dot.style.opacity = op; }
     else { n.ln.style.opacity = 0; n.dot.style.opacity = 0; }
   }
-  // captions: Ali's Apple style (reels 12 and 13). SF 600, one centred line, near-black; one key word per chunk in blue
+  // captions. Default = Ali's "simple story tell caption" (story_caption.js, the black captions of reel 15: a few words at a time,
+  // spoken words near-black, coming words grey, no bold, no movement). TIMING.captions = 'apple' switches to the style below.
+  const capStyle = () => ((window.TIMING && TIMING.captions) || window.CAPTION_STYLE || 'story');
+  const useStory = () => capStyle() === 'story' && !!window.StoryCaption;
+  // the other style: Ali's Apple style (reels 12 and 13). SF 600, one centred line, near-black; one key word per chunk in blue
   // New York italic. A chunk is at most 4 words, or ends at , . ? ! or at a pause over 0.35 s. The whole chunk shows at
   // once with a 0.12 s fade. No movement. Key words: TIMING.keys or window.CAPTION_KEYS (a list of words).
   let CAPS = [];
   const capNorm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, ''), esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
   function buildCaps() {
+    if (useStory()) { StoryCaption.build((window.TIMING && TIMING.words) || []); return; }
     const W = (window.TIMING && TIMING.words) || [], KEYS = new Set(((window.TIMING && TIMING.keys) || window.CAPTION_KEYS || []).map(capNorm)); CAPS = []; let cur = [];
     const flush = () => { if (!cur.length) return; let keyed = false;
       const html = cur.map(w => { const k = !keyed && KEYS.has(capNorm(w[0])); if (k) keyed = true; return k ? '<span class="key">' + esc(w[0]) + '</span>' : esc(w[0]); }).join(' ');
@@ -232,6 +237,7 @@
   K.buildCaps = buildCaps;
   let capKey = '';
   function drawCaps(t) {
+    if (useStory()) { K.dom.cap.style.opacity = 0; StoryCaption.draw(t, { theme: K.capTheme || 'dark', opacity: K.capO, hidden: !!K.noCaps }); return; }
     const c = K.noCaps ? null : CAPS.find(c => t >= c.show0 && t < c.show1), el = K.dom.cap;
     if (!c) { if (capKey !== '') { el.innerHTML = ''; capKey = ''; } el.style.opacity = 0; return; }
     const key = c.t0 + ':' + K.capTheme; if (key !== capKey) { capKey = key; el.className = 'cap ' + (K.capTheme || 'dark'); el.style.fontSize = c.size + 'px'; el.innerHTML = c.html; }
@@ -298,6 +304,7 @@
     ov.innerHTML = '<div id="grain"></div><svg id="lsvg" width="' + W + '" height="' + H + '"></svg><div id="labels"></div><div id="cap" class="cap dark"></div>';
     K.dom = { grain: ov.querySelector('#grain'), svg: ov.querySelector('#lsvg'), labels: ov.querySelector('#labels'), cap: ov.querySelector('#cap') };
     K.dom.grain.style.backgroundImage = 'url(' + paperCanvas(512, 21, { base: '#ffffff', grain: 16, fibres: 520 }).toDataURL('image/png') + ')';
+    if (window.StoryCaption) StoryCaption.mount(ov);
     buildCaps();
   };
 

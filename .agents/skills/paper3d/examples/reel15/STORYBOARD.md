@@ -18,7 +18,7 @@ Captions are automatic (top of frame, y 268-400). Extra on-screen text uses `u.l
 kinds `name` (small caps part names with a leader line), `note` (one short sentence), `mid` / `big` (a number),
 `small` (a quiet footnote). At most two labels at once, never over the subject, never in the caption band, inside
 x 100-980 and y 430-1500. Fade in/out over 0.2-0.3 s (opacity only). No moving, scaling or bouncing text.
-During every inside-the-tag shot keep one quiet footnote: `Slowed down and drawn bigger` (kind small, screen [540, 1490]).
+No footnotes or disclaimers (v1 had `Slowed down and drawn bigger` during the inside-the-tag shots; Ali had it removed).
 
 ## Stations (frames on the paper; see film/world.js for what stands where)
 - `G` the supermarket gates. Gate A at x -0.5, gate B at x +0.5, panels parallel to Z, people walk along +Z (out of the shop, toward the default camera). The shopper (legs + bag) stops at z = +0.15 between the gates.

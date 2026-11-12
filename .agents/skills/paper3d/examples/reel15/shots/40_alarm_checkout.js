@@ -170,6 +170,5 @@
     u.label('mixed', '<span style="white-space:nowrap">The magnet\'s tiny arrows get mixed up</span>', { screen: [540, 1400], kind: 'note', w: 760, o: seg(64.95, 65.2, t) * (1 - seg(65.7, 65.95, t)) });
     const hz = 58000 + 2000 * E.cubicInOut(seg(65.6, 66.45, t));
     u.label('hz', NUM((Math.round(hz / 10) * 10).toLocaleString('en-US')), { screen: [540, 1395], kind: 'big', o: seg(66.0, 66.25, t) * (1 - seg(67.0, 67.25, t)) });
-    u.label('slow', 'Slowed down and drawn bigger', { screen: [540, 1490], kind: 'small', o: seg(64.7, 64.95, t) * (1 - seg(69.55, 69.8, t)) });
   } });
 })();
