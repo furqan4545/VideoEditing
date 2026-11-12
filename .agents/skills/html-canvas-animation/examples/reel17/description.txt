@@ -1,0 +1,31 @@
+Your like is sent as a fact, never as +1. That is why it never gets lost. 👇
+
+Big systems follow one old rule: one writer per piece of data. Here is what the video had no time for.
+
+🧠 4 more things behind one heart
+1️⃣ A double tap can't count twice. Meta's paper on its social graph store (TAO, 2013) says only one "like" can exist between one person and one post. Send it five times and it just overwrites itself. Engineers call this idempotent.
+2️⃣ The count lives on the side. Counting every name on every view would be far too slow, so the number is kept next to the post. Instagram's engineers wrote that they change it in the same database step as saving your like, so the two never disagree.
+3️⃣ Famous posts get a ticket. When a huge post's saved count runs out, thousands of servers want to ask the database at once. Instagram uses a "lease": only the first server asks, the rest wait a moment or show the old number.
+4️⃣ Reads beat writes by a mile. The same Meta paper: about a billion reads a second, only millions of writes. Writes are 0.2% of all requests. That is why "many copies to read, one place to write" works so well.
+
+⏱ How late is "a second later"? (Meta's own measurements)
+• Under 1 second: 85% of the time
+• Under 3 seconds: 99% of the time
+• Under 10 seconds: 99.8% of the time
+You still see your own like at once, because your own request comes back with the answer.
+
+⚙️ Copy this
+SQL: UPDATE posts SET likes = likes + 1 WHERE id = 123;
+The database adds one itself, in one step. Nobody reads the old number first.
+Table: likes(user_id, post_id) with a UNIQUE key on the pair.
+Give every request an ID, so a retry is ignored instead of counted again.
+
+🚫 2 bugs that lose likes
+• Reading the number, adding one in your app, writing it back. Two servers do it at once and one like is gone.
+• A retry with no request ID. Bad Wi-Fi sends it twice and it counts twice.
+
+📚 Sources: Bronson et al., "TAO: Facebook's Distributed Data Store for the Social Graph", USENIX ATC 2013. Meta Engineering, "TAO: The power of the graph", 2013. Instagram Engineering, "Instagration Pt. 2: Scaling our infrastructure to multiple data centers".
+
+Save this for the next app you build.
+
+#systemdesign #softwareengineering #backend #programming #coding #developer #computerscience

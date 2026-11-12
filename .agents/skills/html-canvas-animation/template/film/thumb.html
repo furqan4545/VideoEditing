@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- The thumbnail: one frame of the film's own world (no photo of Ali), the question on top in SF 600 with one key word in
+     red New York italic. Keep the title and the subject inside the 3:4 grid crop (y 240-1680) and x 100-980.
+     Render: python tools/thumb.py out/thumbnail.png  (then save a JPEG next to the reel in Downloads) -->
+<html lang="en"><head><meta charset="utf-8"><title>Thumbnail</title>
+<style>html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#f4f2ed}#cv{position:absolute;left:0;top:0;width:1080px;height:1920px}</style>
+<script src="timing.js"></script><script src="timing2.js"></script><script src="fonts.js"></script></head>
+<body><canvas id="cv"></canvas><script src="motion.js"></script><script src="kit.js"></script><script src="story.js"></script>
+<script src="scenes/demo.js"></script>
+<script>
+const THUMB = {
+  t: 4.0,                                               // the tight-clock moment whose world is drawn
+  cam: { x: DEV.x + DEV.w / 2, y: DEV.y + DEV.h / 2 + 160, zoom: 0.95 },   // the framing (world point at screen centre)
+  lines: [[['How', 0], ['does', 0], ['this', 0]], [['never', 0], ['break?', 1]]],   // [word, key?]; key = red New York italic
+  y: 352, size: 104, lineH: 128, key: '#e0242c',
+};
+function thumbTitle() {
+  screen(); const f = F(THUMB.size, 600), fk = FS(Math.round(THUMB.size * 1.12), 600, true), sp = 26; let y = THUMB.y;
+  for (const line of THUMB.lines) {
+    const ws = line.map(([w, k]) => { g.font = k ? fk : f; g.letterSpacing = (k ? 0 : -1.2) + 'px'; return g.measureText(w).width; }); g.letterSpacing = '0px';
+    let x = 540 - (ws.reduce((a, b) => a + b, 0) + sp * (line.length - 1)) / 2;
+    line.forEach(([w, k], i) => { T(w, x, y, { f: k ? fk : f, c: k ? THUMB.key : '#0f1216', ls: k ? 0 : -1.2 }); x += ws[i] + sp; });
+    y += THUMB.lineH;
+  }
+}
+window.__ready = Promise.all([document.fonts.ready, window.FONTS_READY]).then(() => {
+  setupCanvas(); makeGrain(); QT = THUMB.t; CAM = { ...THUMB.cam, rot: 0 }; VIEW = OM.view(CAM, { W, H }); paper();
+  for (const L of LAYERS) { world(); g.save(); try { L.fn(THUMB.t); } catch (e) { console.error(L.name, e); } g.restore(); }
+  light(); thumbTitle(); return true;
+});
+</script></body></html>

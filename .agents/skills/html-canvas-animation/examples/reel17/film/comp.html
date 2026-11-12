@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!-- onetake composition · Reel 17 "how Instagram never loses a like" · vertical 1080x1920 · one camera over a white paper desk · personal, noncommercial -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reel 17</title>
+<style>
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#f4f2ed}
+#cv{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#hud{position:absolute;left:10px;top:8px;font:13px monospace;color:#d00;display:none;background:rgba(255,255,255,.8)}
+</style>
+<script src="timing.js"></script>
+<script src="timing2.js"></script>
+<script src="fonts.js"></script>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="hud"></div>
+<script src="motion.js"></script>
+<script src="base.js"></script>
+<script src="scenes/phone.js"></script>
+<script src="scenes/class.js"></script>
+<script src="scenes/wall.js"></script>
+<script src="scenes/network.js"></script>
+<script>
+// Contract for the renderer: __seek, __ready, __meta, __motion, __events.
+// ───────── the breathing-room clock ─────────
+// The voice has 0.2 s of silence after every sentence (window.VO2, the NEW clock the film plays on). Scenes, camera keys
+// and sound moments were designed on the tight clock (window.VO). oldT(newT): identity inside the words; across each pause
+// the last 0.3 s of the piece is stretched over 0.5 s, so the picture eases through the pause instead of freezing.
+const VO2 = window.VO2, DUR2 = VO2.dur, SEG2 = {}; VO2.segs.forEach(s => (SEG2[s.id] = s));
+const TAILW = 0.3;
+function oldT(T) {
+  const S = VO2.segs; if (T <= S[0].t0) return T;
+  for (const s of S) { const L = s.old_t1 - s.old_t0, end = s.t1 + s.pause; if (T > end) continue;
+    const d = T - s.t0; if (!s.pause || d <= L - TAILW) return s.old_t0 + d;
+    return s.old_t1 - TAILW + (d - (L - TAILW)) / (TAILW + s.pause) * TAILW; }
+  const l = S[S.length - 1]; return l.old_t1 + (T - (l.t1 + l.pause));
+}
+function newT(t) {   // inverse (for sound moments designed on the old clock)
+  let lo = 0, hi = DUR2; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (oldT(m) < t) lo = m; else hi = m; } return (lo + hi) / 2;
+}
+let NEWT = 0;
+// Ali's footage follows the NEW clock (a sentence end keeps playing his own spare frames through the pause)
+frameOf = function (id, t) { const s = SEG2[id], tq = Math.round(NEWT * FPS) / FPS; return clamp(s.pad + Math.round((tq - s.t0) * FPS), 0, s.frames - 1); };
+window.__meta = { dur: DUR2, fps: FPS, w: W, h: H };
+const Q = new URLSearchParams(location.search);
+
+// ───────── Ali on camera: the hook, "That is Instagram", and the close ─────────
+const ALI_SHOW = [
+  { id: 'H', t0: -1, t1: 6.75, c: ALI_H, crop: CROP_H },
+  { id: 'R16a', t0: A_.tInsta - 0.6, t1: T1('R16a') + 0.03, c: ALI_T, crop: CROP_T },
+  { id: 'R20', t0: T0('R20') - 0.6, t1: T1('R20'), c: ALI_E, crop: CROP_E },
+  { id: 'R21', t0: T0('R21'), t1: T1('R21'), c: ALI_E, crop: CROP_E },
+  { id: 'R22', t0: T0('R22'), t1: DUR + 1, c: ALI_E, crop: CROP_E },
+];
+const aliNow = t => ALI_SHOW.filter(a => t >= a.t0 && t < a.t1);
+layer(50, 'ali', t => { for (const a of aliNow(t)) if (onScreen(a.c.x, a.c.y, a.c.w, a.c.h, 200)) aliCard(a.id, t, a.c, a.crop); });
+
+// ───────── master camera (comp.html) — scene files propose views in VIEW_REG for their previews ─────────
+let KEYS = [];
+// the hidden joins (my transitions). Each is a moment where two different places look identical on screen.
+const SWAP1 = 6.40;                                   // hook post image (full screen) == Sara's drawing on the class wall
+const DIVE_Z = 1920 / POST_IMG.h * 1.04;              // zoom at which the post image covers the whole frame
+const IMG_C = [POST_IMG.x + POST_IMG.w / 2, POST_IMG.y + POST_IMG.h / 2], DRAW_C = [DRAW.x + DRAW.w / 2, DRAW.y + DRAW.h / 2], DRAW_K = POST_IMG.w / DRAW.w;
+const PUSH_PT = aliPoint(ALI_T, CROP_T, 905, 885);    // black shirt just right of his pointing fingertip (take px ~810, 870)
+const PUSH0 = T1('R16a') - 0.62, PUSH1 = T1('R16a') - 0.02, PHONE_C = [PHONE.x + PHONE.w / 2, PHONE.y + PHONE.h * 0.42];
+const viewKeys = (name, t0, t1) => ((VIEW_REG[name] || { keys: [] }).keys).filter(k => k[0] >= t0 && k[0] <= t1);
+function buildKeys() {
+  if (Q.has('view') && VIEW_REG[Q.get('view')]) { KEYS = mkKeys(VIEW_REG[Q.get('view')].keys); return; }
+  const S = ease.sineInOut, X = ease.expoInOut, O = ease.expoOut, L = ease.linear;
+  const NS = CL_NSPOT(5, 2), N0 = CL_NSPOT(0, 2), cuX = PH_C2.x + 150, cuY = PH_C2.y + 104;
+  KEYS = mkKeys([
+    // A · hook: post + Ali, push on "millions", dive into the post image; it covers the frame at SWAP1
+    [0, 540, 745, 1.0, { fy: 760 }], [3.3, 540, 752, 1.02, { curve: S, fy: 760 }], [3.95, 450, 790, 1.40, { curve: X, fy: 690 }],
+    [5.4, 455, 792, 1.46, { curve: S, fy: 690, hit: 2 }], [5.75, 455, 792, 1.48, { curve: S, fy: 690 }],
+    [SWAP1, IMG_C[0], IMG_C[1], DIVE_Z, { curve: X }],
+    // B · the same picture is now Sara's drawing on the class wall: pull back to the whole room
+    [SWAP1 + 0.0005, DRAW_C[0], DRAW_C[1], DIVE_Z * DRAW_K, { curve: L }],
+    [7.25, 3500, 1300, 0.5, { fy: 720, curve: X, anchor: DRAW_C }], [8.6, 3500, 1290, 0.52, { fy: 720, curve: S }],
+    [8.95, 3000, 275, 1.6, { fy: 900, curve: X }], [10.7, 3006, 272, 1.72, { fy: 900, curve: S }],
+    [11.12, 3768, 292, 1.12, { fy: 880, curve: X }], [12.0, 3770, 292, 1.18, { fy: 880, curve: S }],
+    [12.32, 3644, 318, 3.05, { fy: 860, curve: X, hit: 2 }], [13.6, 3646, 318, 3.25, { fy: 860, curve: S }],
+    [13.95, CL_YOU.x, CL_YOU.y - 60, 1.0, { curve: X }], ...viewKeys('cl-wide', 14.5, 17.85),
+    [18.35, 3775, 445, 1.15, { curve: S }], [19.42, 3648, 320, 3.0, { fy: 820, curve: X, hit: 2 }], [20.95, 3652, 318, 3.15, { fy: 820, curve: S }],
+    [21.5, 3775, 430, 1.12, { curve: X }], [23.3, 3700, 410, 1.25, { curve: S }],
+    [24.25, CL_BROKE.x, CL_BROKE.y + 30, 2.7, { curve: X, hit: 3 }], [25.3, CL_BROKE.x, CL_BROKE.y + 40, 2.9, { curve: S }], [26.1, CL_BROKE.x, CL_BROKE.y + 70, 2.75, { curve: S }],
+    [26.75, 3770, 298, 1.08, { fy: 840, curve: O }], [29.35, 3770, 298, 1.12, { fy: 840, curve: S }],
+    [29.75, 3500, 1000, 0.6, { curve: X }], [30.4, 3500, 990, 0.62, { curve: S }], [30.95, 3560, 565, 1.3, { curve: X }], [31.35, 3560, 570, 1.35, { curve: S }],
+    [31.75, 3500, 1000, 0.74, { curve: X }], [32.75, 3500, 990, 0.76, { curve: S }],
+    [33.05, NS.x, NS.y + 40, 1.4, { curve: X }], ...viewKeys('cl-notes', 33.2, 34.25),
+    [34.62, N0.x, N0.y - 22, 3.0, { curve: X }], [35.0, N0.x, N0.y - 24, 3.1, { curve: S }],
+    [35.42, 3610, 790, 2.0, { curve: X }], [37.2, 3600, 790, 2.05, { curve: S }],
+    [37.58, 3446, 840, 6.0, { fy: 880, curve: X }], [39.2, 3458, 842, 6.4, { fy: 880, curve: S }],
+    [39.95, 3740, 470, 1.04, { fy: 820, curve: X }], [42.2, 3740, 475, 1.08, { fy: 820, curve: S }],
+    [42.78, 3500, 1300, 0.5, { curve: X }], [43.75, 3500, 1300, 0.52, { curve: S }],
+    [43.98, NS.x, NS.y - 40, 1.25, { curve: X }], ...viewKeys('cl-bin', 44.1, 44.8), [45.2, 3700, 790, 2.0, { curve: X }],
+    [46.18, 3446, 842, 4.6, { fy: 860, curve: X }], [46.95, 3448, 842, 4.8, { fy: 860, curve: S }],
+    [47.35, 3705, 792, 2.05, { curve: X }], [48.25, 3725, 800, 2.3, { curve: S }],
+    // C · the turn: whip to Ali, push through his pointing hand into black, come out of the phone's black glass
+    [A_.tInsta + 0.04, ALI_T.x + 500, ALI_T.y + 360, 1.0, { curve: X, hit: 3 }], [PUSH0, ALI_T.x + 500, ALI_T.y + 366, 1.04, { curve: S }],
+    [PUSH1, PUSH_PT[0], PUSH_PT[1], 46, { curve: ease.expoIn, anchor: PUSH_PT }],
+    [PUSH1 + 0.0005, 5940, 2455, 40, { curve: L }],
+    [50.4, 5850, 2390, 1.5, { curve: O, fy: 1000 }], [50.95, 5940, 2130, 1.12, { curve: X, fy: 880 }], [51.85, 5940, 2100, 1.16, { curve: S, fy: 880 }],
+    [52.4, 5940, 1760, 1.45, { curve: X, fy: 900 }], [52.78, cuX, cuY, 3.0, { curve: X }], [53.4, cuX + 8, cuY + 4, 3.15, { curve: S }],
+    [53.8, 5960, 1780, 1.15, { curve: X, fy: 900 }], [54.1, 6600, 1600, 0.9, { curve: S, fy: 900 }],
+    // D · the network
+    [54.45, 9410, 880, 0.80, { fy: 760, curve: X }], [54.62, 9395, 905, 0.84, { fy: 760, curve: S }], ...viewKeys('nw-all', 55.0, 64.95),
+    // E · the close
+    [65.6, 14000, 1120, 1.50, { curve: X, fy: 860, hit: 3 }], ...viewKeys('ph-close', 65.7, 77),
+  ]);
+}
+// the push into his shirt goes black; we come out of the phone's black glass
+overlay(20, 'push-black', t => {
+  const a = t < PUSH0 || t > PUSH1 + 0.5 ? 0 : t <= PUSH1 ? sstep(9, 30, CAM.zoom) : 1 - sstep(PUSH1 + 0.12, PUSH1 + 0.4, t);
+  if (a <= 0.003) return; g.fillStyle = `rgba(8,8,10,${a})`; g.fillRect(0, 0, W, H); });
+
+// ───────── captions: the reel 13 style (Ali's rule). One line in Apple's SF semibold, black, straight on the picture (no box),
+// the first key word of a line in New York italic blue, a soft drop shadow; up to 4 words a line, a new line at , . ? or a pause.
+// White text when the picture behind the line is dark (measured from the frame itself). Played on the NEW clock.
+const CAPS = [], KEYW = new Set(['instagram', 'likes', 'millions', 'second?', 'imagine', '100', "sara's", 'board', '41', 'walk', 'minji', 'same', 'saw', '42.', 'two', 'only',
+  'gone.', 'race', 'teacher', 'rule.', 'nobody', 'note', 'name', 'one', 'notebook.', 'number.', '44.', 'lost.', 'twice,', 'already', 'once.', 'instagram.', 'phone', 'never',
+  'name.', 'every', 'pen', 'server.', 'world', 'copies.', 'later.', 'app,', 'engineering', 'pen.']);
+function buildCaps() {
+  const chunks = [];
+  for (const s of VO2.segs) { let cur = []; s.words.forEach(([tok, t0, t1], k) => { cur.push([tok, t0, t1, s.id]); const nxt = k + 1 < s.words.length ? s.words[k + 1][1] : null;
+    if (cur.length === 4 || /[,.?]$/.test(tok) || nxt === null || nxt - t1 > 0.35) { chunks.push(cur); cur = []; } }); }
+  chunks.forEach((c, i) => { const t0 = Math.max(0, c[0][1] - 0.06), t1 = i + 1 < chunks.length ? Math.min(chunks[i + 1][0][1] - 0.06, c[c.length - 1][2] + 0.35) : DUR2; let keyed = false;
+    const parts = c.map(([tok, , , sid]) => { const key = !keyed && KEYW.has(tok.toLowerCase()); if (key) keyed = true;
+      let txt = tok.replace("Sara's", 'Sara’s'); if (sid === 'R7c' && tok.toLowerCase() === 'like') txt = 'like'; if (sid === 'R22' && tok === 'pen.') txt = '“pen”'; return { txt, key }; });
+    const n = c.reduce((a, w) => a + w[0].length, 0) + c.length - 1; CAPS.push({ t0, t1, parts, size: n * 31 <= 880 ? 60 : Math.floor(880 / (n * 0.52)) }); });
+}
+function capDarkness(w) {   // share of dark pixels behind the caption text (0 = all light, 1 = all dark), read from the frame drawn so far
+  try { const x0 = Math.max(0, Math.round((540 - w / 2 - 16) * DPR)), ww = Math.max(8, Math.round((w + 32) * DPR)), d = g.getImageData(x0, Math.round(1420 * DPR), ww, Math.round(64 * DPR)).data;
+    let dark = 0, n = 0; for (let i = 0; i < d.length; i += 4 * 23) { const l = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255; if (l < 0.45) dark++; n++; }
+    return sstep(0.22, 0.5, dark / n); } catch (e) { return 0; }
+}
+function drawCaps(TT) {
+  if (Q.has('nocaps')) return; const c = CAPS.find(c => TT >= c.t0 && TT < c.t1); if (!c) return; screen();
+  const k = clamp((TT - c.t0) / 0.12), e = 1 - (1 - k) * (1 - k), y = 1470 + (1 - e) * 10, f = F(c.size, 600), fk = FS(Math.round(c.size * 1.07), 600, true), ls = -0.01 * c.size;
+  const sp = c.size * 0.27, gap = i => sp + (c.parts[i].key ? c.size * 0.07 : 0) + (c.parts[i + 1] && c.parts[i + 1].key ? c.size * 0.03 : 0); let total = 0; for (let i = 0; i < c.parts.length - 1; i++) total += gap(i);
+  const ws = c.parts.map(p => { g.font = p.key ? fk : f; g.letterSpacing = (p.key ? 0 : ls) + 'px'; const w = g.measureText(p.txt).width; total += w; return w; }); g.letterSpacing = '0px';
+  const dark = capDarkness(total);
+  g.save(); g.globalAlpha = e; g.shadowColor = dark > 0.5 ? 'rgba(0,0,0,0.6)' : 'rgba(15,18,22,0.24)'; g.shadowBlur = 10 * DPR; g.shadowOffsetY = 4 * DPR; g.shadowOffsetX = 0;
+  let x = 540 - total / 2; c.parts.forEach((p, i) => { T(p.txt, x, y, { f: p.key ? fk : f, c: p.key ? mix('#1a8cff', '#62b3ff', dark) : mix('#0f1216', '#ffffff', dark), ls: p.key ? 0 : ls }); x += ws[i] + gap(i); });
+  g.restore();
+}
+
+// ───────── seek ─────────
+function prepare(t) { USED = []; return Promise.all(aliNow(t).map(a => want(a.id, t).p)); }
+function draw(t) {
+  QT = Math.round(t * FPS) / FPS; CAM = camAt(KEYS, t); VIEW = OM.view(CAM, { W, H }); paper();
+  for (const L of LAYERS) { world(); g.save(); try { L.fn(t); } catch (e) { console.error(L.name, e); } g.restore(); }
+  light();
+  for (const O of OVERLAYS) { screen(); g.save(); try { O.fn(t); } catch (e) { console.error(O.name, e); } g.restore(); }
+  document.getElementById('hud').textContent = `t=${t.toFixed(2)} cam ${CAM.x.toFixed(0)},${CAM.y.toFixed(0)} z${CAM.zoom.toFixed(2)}`;
+}
+async function seek(TT) { NEWT = TT; const t = oldT(TT); await prepare(t); draw(t); drawCaps(TT); trimCache(); return true; }
+window.__motion = (T0_, T1_) => { const t0 = oldT(T0_), t1 = oldT(T1_); return Math.min(1800, OM.screenTravel(camAt(KEYS, t0), camAt(KEYS, t1), camAt(KEYS, (t0 + t1) / 2), { W, H }) + (window.SCENE_MOTION ? SCENE_MOTION(t0, t1) : 0)); };
+window.__events = () => ({ T: DUR2, events: (window.SFX_EVENTS || []).map(e => ({ ...e, t: +newT(e.t).toFixed(3), t_old: e.t })).sort((a, b) => a.t - b.t) });
+window.__seek = async t => { await seek(t); return true; };
+window.__ready = Promise.all([document.fonts.ready, window.FONTS_READY]).then(() => { setupCanvas(); makeGrain(); buildKeys(); buildCaps(); return seek(0); });
+if (Q.has('t')) __ready.then(() => seek(parseFloat(Q.get('t'))));
+if (Q.has('hud')) document.getElementById('hud').style.display = 'block';
+if (Q.has('play')) __ready.then(() => { const t0 = performance.now(); let busy = false; (function loop() { if (!busy) { busy = true; seek(((performance.now() - t0) / 1000) % DUR2).then(() => (busy = false)); } requestAnimationFrame(loop); })(); });
+</script>
+</body>
+</html>
