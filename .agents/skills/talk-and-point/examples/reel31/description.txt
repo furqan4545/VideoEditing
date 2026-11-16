@@ -1,0 +1,32 @@
+Your competitor's angry customers are writing your roadmap for free. 👇
+
+📋 The message to copy (send it to a new bot in OpenMausBot):
+"Every Monday, go through Reddit and Hacker News, find what people hate about Cursor, and give me the top five complaints, with a link to each one. Save this list in your notes."
+Swap "Cursor" for your own competitor.
+
+🔗 Trick 1: ask for a link to each complaint. Open a few before you build, so you know they're real people, not something the AI made up.
+
+🧠 Trick 2: "Save this list in your notes." The bot keeps plain notes on your computer (MEMORY.md), so next Monday it only tells you what's new.
+
+🔍 This week's real top 5 about Cursor (17 Nov 2026), so you can check them yourself:
+1. You pay more and get less: reddit.com/r/programming/comments/1lu8eyb
+2. The AI keeps getting worse: reddit.com/r/cursor/comments/1wbust5
+3. Support won't help or refund you: news.ycombinator.com/item?id=43683012
+4. Every update moves your stuff around: reddit.com/r/cursor/comments/1t8pax3
+5. It gets slow and eats memory: reddit.com/r/cursor/comments/1vtiubl
+
+Here's what the video had no time for:
+
+1️⃣ The schedule runs inside the app on your own computer. Plugged in, the app keeps it awake for the hour before a run (Automations → "Keep this computer awake for routines"), but a closed lid still sleeps. For every single Monday, run it on a small server (a VPS).
+2️⃣ Missed a Monday? The run still happens late when you open the laptop, if it's less than 12 hours past the time.
+3️⃣ Ask for exact quotes and the upvote count next to each one. A complaint with 500 upvotes is a feature request with 500 votes.
+4️⃣ Add more places to look: the competitor's GitHub issues, G2 or app store reviews, X. Same message, longer list of sources.
+5️⃣ One bot per competitor. Each one can even run on a different AI (Claude Code or Codex).
+
+⭐ OpenMausBot is free and open source (Apache 2.0): https://github.com/milind-soni/OpenMausBot
+
+Every post in the video is a real public Reddit or Hacker News post (usernames hidden). Not sponsored.
+
+Save this for your next planning meeting.
+
+#startup #founder #saas #ai #aiagents #productmanagement #buildinpublic

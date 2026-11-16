@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!-- talk-and-point · his talking take full frame ↔ animation places on white paper, UI where he points · vertical 1080x1920 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Film</title>
+<style>
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#f4f2ed}
+#cv{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#hud{position:absolute;left:10px;top:8px;font:13px monospace;color:#d00;display:none;background:rgba(255,255,255,.8)}
+</style>
+<script src="timing.js"></script>
+<script src="timing2.js"></script>
+<script src="fonts.js"></script>
+<script src="capdark.js"></script>
+<script src="posts.js"></script>
+<script src="fingers.js"></script>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="hud"></div>
+<script src="motion.js"></script>
+<script src="kit.js"></script>
+<script src="shared.js"></script>
+<script src="story.js"></script>
+<script src="scenes/ali.js"></script>
+<script src="scenes/finger.js"></script>
+<!-- your animation places, one file each, each with its own prefix -->
+<script src="scenes/demo.js"></script>
+<script src="overlays.js"></script>
+<script src="camera.js"></script>
+</body>
+</html>

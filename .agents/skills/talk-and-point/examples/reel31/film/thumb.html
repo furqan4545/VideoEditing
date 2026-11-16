@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!-- Reel 31 thumbnail: the film's own world (no photo of Ali): real angry posts about Cursor piled on the paper, Cursor's
+     icon, and OpenMausBot's "Top 5 complaints" card on top; the question in SF 600 with one red New York italic key word.
+     Title and subject inside the 3:4 grid crop (y 240-1680) and x 100-980.  Render: python tools/thumb.py out/thumbnail.png -->
+<html lang="en"><head><meta charset="utf-8"><title>Thumbnail</title>
+<style>html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#f4f2ed}#cv{position:absolute;left:0;top:0;width:1080px;height:1920px}</style>
+<script src="timing.js"></script><script src="timing2.js"></script><script src="fonts.js"></script><script src="posts.js"></script><script src="fingers.js"></script></head>
+<body><canvas id="cv"></canvas><script src="motion.js"></script><script src="kit.js"></script><script src="shared.js"></script><script src="story.js"></script>
+<script src="scenes/ali.js"></script><script src="scenes/app.js"></script>
+<script>
+const TH = { lines: [[['Steal', 0], ['your', 0]], [['competitor’s', 0]], [['angry', 1], ['customers', 0]]], y: 345, size: 104, lineH: 124, key: '#e0242c' };
+function thumbTitle() {
+  screen(); const f = F(TH.size, 600), fk = FS(Math.round(TH.size * 1.12), 600, true), sp = 26; let y = TH.y;
+  for (const line of TH.lines) {
+    const ws = line.map(([w, k]) => { g.font = k ? fk : f; g.letterSpacing = (k ? 0 : -1.2) + 'px'; return g.measureText(w).width; }); g.letterSpacing = '0px';
+    let x = 540 - (ws.reduce((a, b) => a + b, 0) + sp * (line.length - 1)) / 2;
+    line.forEach(([w, k], i) => { T(w, x, y, { f: k ? fk : f, c: k ? TH.key : '#0f1216', ls: k ? 0 : -1.2 }); x += ws[i] + sp; });
+    y += TH.lineH;
+  }
+}
+window.__ready = Promise.all([document.fonts.ready, window.FONTS_READY]).then(() => {
+  setupCanvas(); makeGrain(); QT = 40; CAM = { x: 540, y: 960, zoom: 1, rot: 0 }; VIEW = OM.view(CAM, { W, H }); paper();
+  world();
+  // the pile of real posts (slightly grey-free, tilted), behind
+  [[3, 70, 690, 470, -0.08], [0, 560, 680, 470, 0.07], [6, 40, 1080, 440, 0.05], [9, 600, 1060, 440, -0.06], [8, 300, 1300, 480, 0.03]].forEach(([i, x, y, w, r]) => {
+    const h = SH_postH(i, w, 0.7); g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(r); g.translate(-w / 2, -h / 2); SH_post(i, 0, 0, w, { maxAR: 0.7, lift: 1.2 }); g.restore(); });
+  // OpenMausBot's list card in front, the top row lit
+  g.save(); g.translate(540, 1190); g.rotate(-0.02); g.translate(-450, -300);
+  const tt = A_.tLit + 0.6; AP_list(0, 0, 900, tt); g.restore();
+  SH_cursorIcon(860, 820, 190, { rot: 0.12 });
+  light(); thumbTitle(); return true;
+});
+</script></body></html>
