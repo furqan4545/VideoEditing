@@ -14,11 +14,16 @@ import numpy as np, soundfile as sf
 SR, FPS, SPEED, PAD = 48000, 30, 1.10, 12
 SRC = os.environ.get("TAKE", "/Users/topg/Downloads/TAKE.mov")      # his recording (or: TAKE=/path/to/take.mov python cut/build.py)
 os.chdir(os.path.dirname(os.path.abspath(__file__)) + "/..")
-SEQ = [  # id, in, out (s in the take: first / last sound from tools in cut/transcribe_take.py), caption text (his words, spelled right)
+SEQ = [  # id, in, out (s in the take: first / last sound) OR a list of parts [(in, out), ...] spliced into one piece
+         # (e.g. the first word of a try + the clean rest of a retry; the splice time lands in timing.json "splices"
+         # so comp.html can hide it with a punch-in) OR {"wav": path} = a line of the off-camera person (VoiceStudio:
+         # reel 19's questions; natural speed, never sped up, no frames), caption text (his words, spelled right)
     ("H",   0.00, 0.00, "The hook line, exactly as he says it."),
     ("R1",  0.00, 0.00, "The next line."),
 ]
 ON_CAM = {"H"}   # only these pieces get JPEG frames (Ali is a photo card only at these moments: hook, the turn, the close)
+EXT_GAIN = -2.5     # the off-camera person sits a little under Ali
+EXT_FX = "highpass=f=110,lowpass=f=7200,aecho=0.85:0.55:23|41:0.16|0.10"   # in the room: a bit duller than his close mic, a short room
 PRE, POST, TAIL = 0.07, 0.10, 1.0
 ONLY_TIMING = "--timing" in sys.argv
 for d in ("cut/check", "cut/raw", "cut/words", "film/footage"): os.makedirs(d, exist_ok=True)
@@ -29,38 +34,63 @@ def active_db(y):
     act = r[r > r.max() - 22]
     return float(np.mean(act))
 
-plan = []
-for sid, a, b, text in SEQ:
-    a = np.floor((a - PRE) * FPS) / FPS; b = np.ceil((b + POST) * FPS) / FPS
-    n = int(round((b - a) / SPEED * FPS))
-    plan.append((sid, float(a), float(b), n, text))
+def ext_clip(path):   # an off-camera line: trimmed to its first / last sound (+ PRE / POST), mono 48 k
+    y, sr = sf.read(path); y = (y if y.ndim == 1 else y.mean(1)).astype(np.float32)
+    if sr != SR: y = np.interp(np.arange(0, len(y), sr / SR), np.arange(len(y)), y).astype(np.float32)
+    hop = 240; n = len(y) // hop; r = 20 * np.log10(np.sqrt(np.mean(y[:n * hop].reshape(n, hop) ** 2, 1)) + 1e-9); act = np.where(r > r.max() - 38)[0]
+    a, b = max(0, act[0] * hop - int(PRE * SR)), min(len(y), (act[-1] + 1) * hop + int(POST * SR)); y = y[a:b].copy()
+    f = int(0.008 * SR); y[:f] *= np.linspace(0, 1, f); y[-f:] *= np.linspace(1, 0, f)
+    return y
+EXT = {}
+plan = []   # (id, first in, last out, frames, text, parts [(a, b, n)])
+for row in SEQ:
+    if isinstance(row[1], dict):
+        sid, spec, text = row; y = ext_clip(spec["wav"]); EXT[sid] = y; n = int(round(len(y) / SR * FPS)) + 2
+        plan.append((sid, -1.0, -1.0, n, text, [])); continue
+    if len(row) == 3: sid, parts, text = row
+    else: sid, a, b, text = row; parts = [(a, b)]
+    pp = []
+    for k, (a, b) in enumerate(parts):
+        a = np.floor((a - (PRE if k == 0 else 0)) * FPS) / FPS; b = np.ceil((b + (POST if k == len(parts) - 1 else 0)) * FPS) / FPS
+        pp.append((float(a), float(b), int(round((b - a) / SPEED * FPS))))
+    plan.append((sid, pp[0][0], pp[-1][1], sum(p[2] for p in pp), text, pp))
 
 if not ONLY_TIMING:
     if not os.path.exists("audio/take.wav"):
         os.makedirs("audio", exist_ok=True); subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", SRC, "-vn", "-ac", "1", "-ar", "48000", "-c:a", "pcm_f32le", "audio/take.wav"], check=True)
     full, sr = sf.read("audio/take.wav"); assert sr == SR; full = full.astype(np.float32)
     levels = {}
-    for sid, a, b, n, text in plan:
+    for sid, a, b, n, text, pp in plan:
         d = n / FPS; raw, out, fdir = f"cut/raw/{sid}.wav", f"cut/check/{sid}.wav", f"film/footage/{sid}"
-        y = full[int(round(a * SR)):int(round(b * SR))].copy()
-        f = int(0.012 * SR); y[:f] *= np.linspace(0, 1, f); y[-f:] *= np.linspace(1, 0, f)
-        sf.write(raw, y, SR)
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", raw, "-filter:a", f"atempo={SPEED}", "-ar", str(SR), out], check=True)
-        y, _ = sf.read(out); y = (y if y.ndim == 1 else y.mean(1)).astype(np.float32)
-        m = int(round(d * SR)); y = np.pad(y, (0, max(0, m - len(y))))[:m]
+        if sid in EXT:   # the off-camera person: natural speed, in the room
+            sf.write(raw, EXT[sid], SR); subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", raw, "-af", EXT_FX, "-ar", str(SR), "-ac", "1", out], check=True)
+            y, _ = sf.read(out); y = (y if y.ndim == 1 else y.mean(1)).astype(np.float32); m = int(round(d * SR)); y = np.pad(y, (0, max(0, m - len(y))))[:m]
+            sf.write(out, y, SR); levels[sid] = active_db(y); continue
+        ys = []
+        for k, (pa, pb, pn) in enumerate(pp):
+            y = full[int(round(pa * SR)):int(round(pb * SR))].copy()
+            f = int(0.012 * SR); y[:f] *= np.linspace(0, 1, f); y[-f:] *= np.linspace(1, 0, f)
+            sf.write(raw, y, SR)
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", raw, "-filter:a", f"atempo={SPEED}", "-ar", str(SR), out], check=True)
+            y, _ = sf.read(out); y = (y if y.ndim == 1 else y.mean(1)).astype(np.float32)
+            m = int(round(pn / FPS * SR)); ys.append(np.pad(y, (0, max(0, m - len(y))))[:m])
+        y = np.concatenate(ys); m = int(round(d * SR)); y = np.pad(y, (0, max(0, m - len(y))))[:m]
         levels[sid] = active_db(y); sf.write(out, y, SR)
         if sid not in ON_CAM: continue
         os.makedirs(fdir, exist_ok=True)
         for old in os.listdir(fdir): os.remove(f"{fdir}/{old}")
-        ps = PAD / FPS * SPEED
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{a - ps:.6f}", "-t", f"{b - a + 2 * ps + 0.2:.6f}", "-i", SRC,
-                        "-vf", f"setpts=(PTS-STARTPTS)/{SPEED},fps={FPS},eq=contrast=1.05:saturation=1.08",
-                        "-frames:v", str(n + 2 * PAD), "-q:v", "3", "-start_number", "0", f"{fdir}/%04d.jpg"], check=True)
-    med = float(np.median(list(levels.values())))
-    gains = {k: float(np.clip(med - v, -5, 5)) for k, v in levels.items()}
+        ps = PAD / FPS * SPEED; k0 = 0
+        for k, (pa, pb, pn) in enumerate(pp):   # pads only at the piece's two ends
+            lp, rp = (PAD if k == 0 else 0), (PAD if k == len(pp) - 1 else 0)
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{pa - lp / FPS * SPEED:.6f}", "-t", f"{pb - pa + (lp + rp) / FPS * SPEED + 0.2:.6f}", "-i", SRC,
+                            "-vf", f"setpts=(PTS-STARTPTS)/{SPEED},fps={FPS},eq=contrast=1.05:saturation=1.08",
+                            "-frames:v", str(pn + lp + rp), "-q:v", "3", "-start_number", str(k0), f"{fdir}/%04d.jpg"], check=True)
+            k0 += pn + lp + rp
+    med = float(np.median([v for k, v in levels.items() if k not in EXT]))
+    gains = {k: (med - v + EXT_GAIN) if k in EXT else float(np.clip(med - v, -5, 5)) for k, v in levels.items()}   # TTS is ~11 dB hot: no clip
     json.dump({"median_db": med, "levels": levels, "gain_db": gains}, open("cut/gains.json", "w"), indent=1)
     R, v = 0.0, np.zeros(int((sum(p[3] for p in plan) / FPS + TAIL + 0.5) * SR), np.float32)
-    for sid, a, b, n, text in plan:
+    for sid, a, b, n, text, pp in plan:
         y, _ = sf.read(f"cut/check/{sid}.wav"); y = y.astype(np.float32) * 10 ** (gains[sid] / 20)
         i = int(round(R * SR)); v[i:i + len(y)] += y; R += n / FPS
     sf.write("cut/voice_raw.wav", v, SR)
@@ -69,7 +99,7 @@ if not ONLY_TIMING:
     from faster_whisper import WhisperModel
     os.environ["HF_HUB_OFFLINE"] = "1"
     model = WhisperModel("small", device="cpu", compute_type="int8")
-    for sid, a, b, n, text in plan:
+    for sid, a, b, n, text, pp in plan:
         y, _ = sf.read(f"cut/check/{sid}.wav"); y = y.astype(np.float32)
         y16 = np.interp(np.arange(0, len(y), 3.0), np.arange(len(y)), y).astype(np.float32)
         segs, _ = model.transcribe(y16, language="en", word_timestamps=True, initial_prompt=text, condition_on_previous_text=False)
@@ -78,7 +108,7 @@ if not ONLY_TIMING:
 
 norm = lambda s: re.sub(r"[^a-z0-9]", "", s.lower())
 segs, R = [], 0.0
-for sid, a, b, n, text in plan:
+for sid, a, b, n, text, pp in plan:
     d = n / FPS; fdir = f"film/footage/{sid}"; wf = f"cut/words/{sid}.json"
     words = [[w["word"], round(R + w["start"], 3), round(R + min(w["end"], d), 3)] for w in json.load(open(wf))["words"]] if os.path.exists(wf) else []
     hw = []
@@ -102,6 +132,7 @@ for sid, a, b, n, text in plan:
     caps = [[m, round(x[0], 3), round(x[1], 3)] for m, x in zip(mine, tt)] if words else []
     segs.append({"id": sid, "t0": round(R, 4), "t1": round(R + d, 4), "n": n, "pad": PAD, "words": caps,
                  "frames": len(os.listdir(fdir)) if os.path.isdir(fdir) else 0, "take_in": round(a, 3), "take_out": round(b, 3), "text": text,
+                 "splices": [round(R + sum(q[2] for q in pp[:k]) / FPS, 4) for k in range(1, len(pp))],
                  "heard": " ".join(w[0] for w in words)})
     R += d
 dur = round(float(np.ceil((R + TAIL) * FPS) / FPS), 4)

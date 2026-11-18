@@ -16,7 +16,7 @@ if a.nocaps: q.append("nocaps=1")
 url = comp.as_uri() + ("?" + "&".join(q) if q else "")
 async def main():
     async with async_playwright() as p:
-        b = await p.chromium.launch(); pg = await b.new_page(viewport={"width": 1080, "height": 1920})
+        b = await p.chromium.launch(args=["--allow-file-access-from-files"]); pg = await b.new_page(viewport={"width": 1080, "height": 1920})
         errs = []; pg.on("pageerror", lambda e: errs.append("pageerror: " + str(e)))
         pg.on("console", lambda m: errs.append(f"console.{m.type}: {m.text}") if m.type in ("error", "warning") else None)
         await pg.goto(url); await pg.evaluate("window.__ready")

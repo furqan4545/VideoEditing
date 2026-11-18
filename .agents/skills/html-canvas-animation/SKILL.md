@@ -5,8 +5,9 @@ description: The "html canvas animation skill" - Ali's clean 2D white-paper "cin
 
 # html-canvas-animation: a white-paper cinematic movie, in one take
 
-One HTML page draws the whole film on a `<canvas>`. Every value is a pure function of `t`, so onetake's `render.py` can
-seek any frame and average several captures across the shutter into real motion blur. One camera travels over one
+One HTML page draws the whole film on a `<canvas>`. Every value is a pure function of `t`, so the renderer
+(`tools/render_fast.py`, the same frames as onetake's `render.py`) can seek any frame and average several captures across
+the shutter into real motion blur. One camera travels over one
 paper desk; every place in the story sits somewhere on that desk, and every change of place or scale is a camera move.
 Made from reel 16 ("the loading bar that lies", Ali: "ok it's great") and reel 17 ("How does Instagram never lose a
 like?", Ali: "omg i love this setup ... this animation is so clean and beautiful").
@@ -36,7 +37,7 @@ For a 3D world (real 3D objects) use the `paper3d` skill instead; this one is th
 7. **Endings:** the last line gives value; a comment keyword is fine; never "follow for more", no profile card.
 8. **Work in the open.** Never go quiet: post progress, send partial renders while the full one runs
    (`tools/preview_partial.sh`), take each finished part as soon as it lands. Keep agent fan-outs to 2-3 at most and
-   say the cost first (reel 15 used up his credits). Never edit `film/` while `render.py` runs.
+   say the cost first (reel 15 used up his credits). Never edit `film/` while a render runs.
 
 ## Start a film
 
@@ -58,9 +59,11 @@ shows the conventions; delete `scenes/demo.js` when your scenes exist.
 | `film/scenes/*.js` | one file per place or part of the story, each with its own name prefix; registers layers, a preview view, `// CAMERA NOTES`, and proposed `SFX_EVENTS` |
 | `film/comp.html` | loads everything and calls `startFilm({ aliShow, keys })`: Ali's on-camera moments and the master camera |
 | `film/thumb.html` | the thumbnail: one frame of the film's world + the question in SF 600 with one red italic key word |
-| `cut/transcribe_take.py`, `cut/check_spots.py`, `cut/build.py`, `cut/pauses.py` | find every try → pick the best try of each line → cut + 1.10x + frames for on-camera pieces → the 0.2 s pauses |
+| `cut/transcribe_take.py`, `cut/runs_words.py`, `cut/check_spots.py`, `cut/build.py`, `cut/piece_words_turbo.py`, `cut/pauses.py` | find every try (each speech stretch re-heard with the turbo model) → pick the best try of each line (a piece can splice parts of two tries) → cut + 1.10x + frames for on-camera pieces → exact word times per piece → the 0.2 s pauses |
 | `sound/cues.py`, `sound/mix.py` | the hand-picked cue list → the mix (voice raw, music low with a drop before the reveal, effects at one level) |
-| `tools/pstills.py`, `tools/preview_partial.sh`, `tools/dump_events.py`, `tools/thumb.py` | contact sheets (`--view`, `--full`), the first N seconds while rendering, the scenes' sound proposals, the thumbnail PNG |
+| `tools/render_fast.py` + `tools/fast_frame.js` | the renderer: onetake's frames bit for bit, ~5x faster (reads the canvas instead of a PNG screenshot per sample) |
+| `tools/render_local.py` | the old renderer (onetake's `render.py` + file access), the fallback when `render_fast.py` refuses a page |
+| `tools/pstills.py`, `tools/capdark.py`, `tools/preview_partial.sh`, `tools/dump_events.py`, `tools/thumb.py`, `tools/swapcheck.py` | contact sheets (`--view`, `--full`), caption black/white per line, the first N seconds while rendering, the scenes' sound proposals, the thumbnail PNG, two frames compared |
 
 ## The order of work
 
@@ -75,9 +78,12 @@ shows the conventions; delete `scenes/demo.js` when your scenes exist.
    look at stills (`tools/pstills.py OUT times --view NAME --full DIR`) and iterate.
 5. **Join the camera** in `comp.html` from the scenes' CAMERA NOTES plus your joins (`references/camera-and-joins.md`).
    Check a still every 2 s, then dense stills around every join.
-6. **Render** (about 2.5 frames a second on 6 workers; 82 s took 16.5 min):
-   `~/.local/share/onetake/.venv/bin/python ~/.claude/skills/onetake/scripts/render.py film/comp.html --out film/draft_v1.mp4 --width 1080 --height 1920 --workers 6`
-   (run it in the background; send `tools/preview_partial.sh` cuts while it runs).
+6. **Render** (reel 17, 2479 frames: 2 min 57 s on 10 browsers; the old screenshot renderer took 16.5 min on 6). First
+   `tools/capdark.py` (black or white per caption line → `film/capdark.js`), then
+   `~/.local/share/onetake/.venv/bin/python tools/render_fast.py film/comp.html --out film/draft_v1.mp4 --width 1080 --height 1920 --workers 10 --keep-frames`
+   (the same frames as onetake's renderer, bit for bit; run it in the background; send `tools/preview_partial.sh` cuts
+   while it runs). One part: `--t0 8 --t1 16`. To redo one stretch: delete its PNGs in `film/_frames` and run again with
+   `--resume`. If it stops because something is drawn over the canvas, use `tools/render_local.py` with the same arguments.
 7. **Sound** while it renders: fill `sound/cues.py` by hand (the scenes' `SFX_EVENTS` are only proposals; reel 17's
    scenes proposed 91, the film used 45), then `sound/mix.py --music sound/music.wav --drop ID --bar SONG_S --room ID`.
    Pick music with `earshot rank` over his music folder; find the song's bar line for the reveal.

@@ -191,7 +191,7 @@ function drawCaps(TT) {
   const k = clamp((TT - c.t0) / 0.12), e = 1 - (1 - k) * (1 - k), y = CAP_Y + (1 - e) * 10, f = F(c.size, 600), fk = FS(Math.round(c.size * 1.07), 600, true), ls = -0.01 * c.size;
   const sp = c.size * 0.27, gap = i => sp + (c.parts[i].key ? c.size * 0.07 : 0) + (c.parts[i + 1] && c.parts[i + 1].key ? c.size * 0.03 : 0); let total = 0; for (let i = 0; i < c.parts.length - 1; i++) total += gap(i);
   const ws = c.parts.map(p => { g.font = p.key ? fk : f; g.letterSpacing = (p.key ? 0 : ls) + 'px'; const w = g.measureText(p.txt).width; total += w; return w; }); g.letterSpacing = '0px';
-  const dark = capDarkness(total);
+  const dark = window.CAP_DARK ? (window.CAP_DARK[CAPS.indexOf(c)] ? 1 : 0) : capDarkness(total);   // per line from tools/capdark.py (film/capdark.js), else read live
   g.save(); g.globalAlpha = e; g.shadowColor = dark > 0.5 ? 'rgba(0,0,0,0.6)' : 'rgba(15,18,22,0.24)'; g.shadowBlur = 10 * DPR; g.shadowOffsetY = 4 * DPR; g.shadowOffsetX = 0;
   let x = 540 - total / 2; c.parts.forEach((p, i) => { T(p.txt, x, y, { f: p.key ? fk : f, c: p.key ? mix('#1a8cff', '#62b3ff', dark) : mix('#0f1216', '#ffffff', dark), ls: p.key ? 0 : ls }); x += ws[i] + gap(i); });
   g.restore();
