@@ -48,7 +48,8 @@ tools/preview.sh person '' legs                                                 
 ```
 
 `new_film.sh` copies the kit (`film/kit.js`, `film/comp.html`), all models (`film/assets/`), a demo world and shot, the
-tools, onetake's `motion.js`, a patched copy of onetake's renderer (`tools/render3d.py`), the three.js bundle (built
+tools, onetake's `motion.js`, the fast GPU renderer (`tools/render_gpu.py` + `tools/gpu_frame.js`), a patched copy of
+onetake's screenshot renderer as a fallback (`tools/render3d.py`), the three.js bundle (built
 once per Mac into `~/.cache/paper3d/`) and Apple's SF and New York fonts from this Mac (`film/fonts/`, never in git).
 It never overwrites a file, so re-running it only adds what is missing.
 
@@ -65,8 +66,11 @@ It never overwrites a file, so re-running it only adds what is missing.
    for every moment the sound should mark. Preview constantly with stills; read `references/KIT.md` for the API.
 5. **Sound:** `tools/events.py` writes `sound/events.json` from the film; mix from that list (`examples/reel15/sound/mix.py`
    as a start; follow the sfx-cloud, earshot and real-sfx skills and rule 5).
-6. **Render and join:** `tools/assemble.sh v1` (about 2.5 frames a second on 6 to 7 workers: say the estimate first; 95 s
-   took 18 minutes). Then scan for accidental jumps:
+6. **Render and join:** `tools/assemble.sh v1` renders with `tools/render_gpu.py`: reel 15 (95 s, 2841 frames, 20,934
+   blur samples) took 4 min 7 s on the M5 Pro, about 11.5 frames a second; the old screenshot renderer took 18 minutes.
+   Say the estimate first (about 2.5 s of render per second of film; more where the camera moves fast). A quick look
+   without motion blur: `render_gpu.py film/comp.html --out out/draft.mp4 --shutter 0`; one part: `--t0 40 --t1 52`.
+   `RENDERER=render3d tools/assemble.sh v1` uses the old renderer. Then scan for accidental jumps:
    `ffmpeg -i out/film_v1.mp4 -vf "select='gt(scene,0.25)',metadata=print:file=-" -an -f null -` and look at each hit.
 7. **Thumbnail:** edit `film/thumb.js`, render `tools/still.py out/thumb.png 0.5 "thumb=1&only="`. Models only, no photo of Ali
    unless he asks.
@@ -76,7 +80,8 @@ It never overwrites a file, so re-running it only adds what is missing.
 - `kit/`: `kit.js` (world, light that follows the camera, camera, labels, captions, footage, seek), `comp.html`, templates.
 - `models/`: see `references/models.md` for every model with its options, states and anchors.
 - `tools/`: `vstills.py` (contact sheets), `still.py` (one clean frame), `preview.sh` (one model alone), `dbg.py` (console
-  errors + a JS expression), `events.py`, `assemble.sh`, `transcribe.py` (word times, one Whisper process).
+  errors + a JS expression), `events.py`, `assemble.sh`, `render_gpu.py` (the fast renderer; `--t0 --t1` renders a part,
+  `--shutter 0` a quick draft), `transcribe.py` (word times, one Whisper process).
 - `references/KIT.md`: how models, shots, camera keys, stations, labels and previews work. Read it before writing a shot.
 - `references/lessons.md`: what broke on reel 15 and the fixes. Read it before staging.
 - `examples/reel15/`: the whole film's world, shots, storyboard, thumbnail, voice cut and mix scripts.
@@ -84,11 +89,18 @@ It never overwrites a file, so re-running it only adds what is missing.
 ## Gotchas that cost time
 
 - Local images cannot become WebGL textures under `file://` unless Chromium runs with `--allow-file-access-from-files
-  --disable-web-security`: always use the project's `tools/*.py` and `tools/render3d.py`, never onetake's `render.py` directly.
+  --disable-web-security`: always use the project's `tools/*.py` (`render_gpu.py`, `render3d.py`), never onetake's `render.py` directly.
+- The project sits on the iCloud-synced Desktop. When iCloud's `bird` process is busy (check `ps -Ao pcpu,comm -r | head`),
+  every file read crawls: a page load took over 30 s and copying reel 15's 200 MB `film/` took about 30 minutes on 18 Nov
+  2026, with iCloud making conflict copies like `0001 2.jpg`. A render that crawls is usually this, not the GPU.
 - The kit restores every model's rest transform each frame. Move a model inside `update`, every frame; to change where
   something rests after the world is built, also copy the new transform into `inst.rest`.
 - At tag scale put clean paper under the subject (`macropaper`) and hide what surrounds it, or the close-up sits on a
   yellow cheese inside a grey bag. Reel 15's `world.js` does it from the camera distance.
 - A white object on white paper needs form: slightly different whites, a darker part, a seam, and its shadow.
 - Captions sit at y 268 to 384. Keep subjects below y 430 and inside x 100 to 980, y up to 1500.
-- Render from a snapshot copy of `film/` if you keep editing while it renders (workers reload the page every 150 frames).
+- Render from a snapshot copy of `film/` if you keep editing while it renders (a browser that crashes reloads the page).
+- `render_gpu.py` keeps every shutter sample on the GPU and draws the shadow map once per frame. It is GPU-bound: more
+  GPU browsers do not help (1, 2, 3 ran 7.7, 8.1, 8.2 frames a second on the demo). Its frames differ from the old
+  renderer's no more than two runs of the old renderer differ from each other (ambient-occlusion noise), and reel 15
+  gave the same three scene-change hits. Captions and labels are crisp at the frame time, not averaged over the shutter.

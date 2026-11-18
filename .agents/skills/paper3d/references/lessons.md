@@ -26,7 +26,13 @@
 - Depth of field cannot see fat lines: draw field lines as thin tubes (`KIT.tubeLine`), and keep glows out of the depth pass (`soft: true`).
 - No tone mapping (footage and paper keep their exact colours): keep lights modest so whites do not clip.
 - `KIT.event(t, kind, note, dur)` in every shot; `tools/events.py` exports them for the mix. A sequence without events gets no sound.
-- Render: about 2.5 frames a second with 6 to 7 workers. A scene-change scan after the render finds accidental pops; whips and dives show up there too and are fine if blurred.
+- Render (18 Nov 2026): the screenshot renderer spent 95% of its 18 minutes on PNGs (a sample draws in ~15 ms, a Chrome
+  PNG screenshot took ~270 ms). `tools/render_gpu.py` sums the samples on the GPU and renders reel 15 in 4 min 7 s. What
+  it took: send frames as a Blob (a Uint8Array upload took 200 ms), force a garbage collection every 16 frames (Chrome's
+  blob store fills and every upload fails after ~260 frames), read the frame without blocking (a blocking read stalled
+  ~40 ms on Metal), place the HTML overlay in separate browsers that never draw 3D, and draw the 4096 px soft shadow
+  map once per frame (it was 60% of a sample; the frames stayed within run-to-run noise).
+- A scene-change scan after the render finds accidental pops; whips and dives show up there too and are fine if blurred.
 
 ## Cost
 - The models took 24 agents (12 builders + 12 refiners, about 9M tokens) and the staging 5 more; the account ran out of
