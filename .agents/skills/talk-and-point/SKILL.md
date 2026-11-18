@@ -85,9 +85,12 @@ tools/heavy.sh "reelN cut+hands" zsh -c "$PY cut/build.py && $PY cut/piece_words
    whips. Write `story.js`, the places, `FG_PINS`, the camera. Stills: `$PY tools/pstills.py look/s.jpg 0.5,1.5,... --cols 9`
    (every ~1.5 s, then dense around whips, pins and punch-ins). Check: no pin on his face, no dark card in the caption band.
 3. Sound: `sound/cues.py` → `uv run -q --with numpy --with soundfile --with scipy --with pyloudnorm python sound/mix.py --music sound/music.wav --drop ... --hush ...`.
-4. `$PY tools/capdark.py`, then render under the lock (60 s ≈ 20 min at ~1.4 frames/s on 6 workers):
-   `tools/heavy.sh "reelN render" $PY tools/render_local.py film/comp.html --out film/draft_v1.mp4 --width 1080 --height 1920 --workers 6 --keep-frames`.
-   Send `tools/preview_partial.sh` cuts while it runs. To fix a stretch: delete its PNGs in `film/_frames`, `--resume`.
+4. `$PY tools/capdark.py`, then render under the lock with the fast renderer (same frames as the old one, bit for bit):
+   `tools/heavy.sh "reelN render" $PY tools/render_fast.py film/comp.html --out film/draft_v1.mp4 --width 1080 --height 1920 --workers 10 --keep-frames`.
+   Reel 31, 3 s test on 6 browsers: 41 s vs 75 s for the old `render_local.py`, all 90 frames identical (19 Nov 2026);
+   more browsers help (reel 17: 10 ran 1.6x faster than 6). One stretch: `--t0 6 --t1 9`. Send `tools/preview_partial.sh`
+   cuts while it runs. To fix a stretch: delete its PNGs in `film/_frames`, `--resume`. If it stops because something is
+   drawn over the canvas, run `tools/render_local.py` with the same arguments.
 5. Mux, `tools/scenescan.sh`, a 1 fps sheet, Whisper on the mix (`tools/whisper_mix.py`), earshot `timeline` + `measure`.
 6. Deliver `~/Downloads/reelN_<slug>/`: MP4, `description.txt` (under 2,200 characters, only what the video skipped, every
    link open), `thumbnail.jpg` (`film/thumb.html`, `tools/thumb.py`).

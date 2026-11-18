@@ -52,7 +52,7 @@
   const run = (q, target) => { R.setRenderTarget(target); R.render(q.s, camO); R.setRenderTarget(null); };
 
   const thumbs = new Uint8Array(TW * TH * SMAX * 4), pix = new Uint8Array(W * H * 4);
-  let cfg = null, lastSig = null, posts = [], sent = 0;
+  let cfg = null, lastSig = null, posts = [], sent = 0, warm = false;
   const prof = window.__gpuProf = { draw: 0, thumbs: 0, redo: 0, oseek: 0, fin: 0, read: 0, post: 0, n: 0 };
   const now = () => performance.now();
 
@@ -126,6 +126,10 @@
     // rule) is summed again over the kept side only - 38 of reel 15's 2841 frames.
     async frame(idx, t) {
       const times = sampleTimes(t), N = times.length, check = N >= 4;
+      if (!warm) {                                                  // a fresh page's first draw comes out wrong (reel 15 frame 300:
+        warm = true;                                                // the bag's film and the shadows; 6.6 levels off vs 1.4): draw twice, keep neither
+        for (let w = 0; w < 2; w++) { if (cfg.fastShadows) R.shadowMap.needsUpdate = true; await K.seek(times[N >> 1]); }
+      }
       let q0 = now();
       const add = (k, src) => { accQ.u.tAcc.value = accA.texture; accQ.u.tSrc.value = src; accQ.u.first.value = k; run(accQ, accB); const sw = accA; accA = accB; accB = sw; };
       const ac = R.autoClear;

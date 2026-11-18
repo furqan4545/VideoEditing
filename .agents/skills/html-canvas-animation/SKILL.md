@@ -84,6 +84,7 @@ shows the conventions; delete `scenes/demo.js` when your scenes exist.
    (the same frames as onetake's renderer, bit for bit; run it in the background; send `tools/preview_partial.sh` cuts
    while it runs). One part: `--t0 8 --t1 16`. To redo one stretch: delete its PNGs in `film/_frames` and run again with
    `--resume`. If it stops because something is drawn over the canvas, use `tools/render_local.py` with the same arguments.
+   An older project without `tools/render_fast.py`: re-run `scripts/new_film.sh` on it (it only adds missing files).
 7. **Sound** while it renders: fill `sound/cues.py` by hand (the scenes' `SFX_EVENTS` are only proposals; reel 17's
    scenes proposed 91, the film used 45), then `sound/mix.py --music sound/music.wav --drop ID --bar SONG_S --room ID`.
    Pick music with `earshot rank` over his music folder; find the song's bar line for the reveal.

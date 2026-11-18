@@ -1,6 +1,6 @@
 # paper3d kit: how to build a model or a shot
 
-One HTML composition (`film/comp.html`), rendered by onetake's `render.py`. It is a real 3D world (three.js r180,
+One HTML composition (`film/comp.html`), rendered by `tools/render_gpu.py` (the fast GPU renderer; `tools/render3d.py`, onetake's screenshot renderer, is the fallback). It is a real 3D world (three.js r180,
 bundled in `vendor/three.bundle.js` as `THREE` + `THREEX`) on white paper. Everything is a pure function of time:
 `window.__seek(t)` must give the same frame every time. Read `film/kit.js` (short) before writing anything; read
 `film/assets/gate.js` and `film/assets/tag.js` as the two reference models (quality bar and conventions).

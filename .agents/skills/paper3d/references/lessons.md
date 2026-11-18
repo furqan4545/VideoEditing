@@ -31,7 +31,9 @@
   it took: send frames as a Blob (a Uint8Array upload took 200 ms), force a garbage collection every 16 frames (Chrome's
   blob store fills and every upload fails after ~260 frames), read the frame without blocking (a blocking read stalled
   ~40 ms on Metal), place the HTML overlay in separate browsers that never draw 3D, and draw the 4096 px soft shadow
-  map once per frame (it was 60% of a sample; the frames stayed within run-to-run noise).
+  map once per frame (it was 60% of a sample; the frames stayed within run-to-run noise). A fresh page's first draw
+  after a jump comes out wrong (reel 15 at 10 s: the bag's film and the shadows, 6.6 levels off instead of 1.4), so each
+  browser draws its first frame twice and throws it away; it only showed in renders that start mid-film.
 - A scene-change scan after the render finds accidental pops; whips and dives show up there too and are fine if blurred.
 
 ## Cost

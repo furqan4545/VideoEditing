@@ -51,7 +51,8 @@ tools/preview.sh person '' legs                                                 
 tools, onetake's `motion.js`, the fast GPU renderer (`tools/render_gpu.py` + `tools/gpu_frame.js`), a patched copy of
 onetake's screenshot renderer as a fallback (`tools/render3d.py`), the three.js bundle (built
 once per Mac into `~/.cache/paper3d/`) and Apple's SF and New York fonts from this Mac (`film/fonts/`, never in git).
-It never overwrites a file, so re-running it only adds what is missing.
+It never overwrites a file, so re-running it only adds what is missing: run it on an older project (reel 15) to add
+`tools/render_gpu.py`, then render with that instead of the project's old `render3d.py`.
 
 ## The order of work
 
