@@ -26,7 +26,12 @@ Every skill lives in `.agents/skills/<skill-name>/SKILL.md`.
 | `simple-storytell-caption` | Ali's "simple story tell caption": the plain black captions of reel 15 (a few words at a time near the top, SF medium, spoken words near-black and coming words grey, no bold, no movement; white over footage). One JS file for any HTML film and `scripts/burn.py` to burn them onto a finished video. Default captions of `paper3d`. |
 | `html-canvas-animation` | The "html canvas animation skill": Ali's clean 2D white-paper cinematic movie (reel 16 loading bar, reel 17 Instagram likes). One HTML canvas, every frame a function of time, one camera that whips, dives and pulls out over a paper desk, premium black-and-white components with soft shadows, hidden joins instead of cuts, his footage as a photo card, reel 13 captions, 0.2 s after every sentence, rendered with motion blur by `tools/render_fast.py` (onetake's frames bit for bit: reel 17 in 3 min instead of 16.5). Start: `.agents/skills/html-canvas-animation/scripts/new_film.sh downloads/reelN/full`. Reel 17 is the worked example. Needs `onetake`. |
 | `talk-and-point` | Ali's "talk and point" reel (reel 31, "awesome editing style"): his talking take full frame ↔ animation scenes on white paper, every change a motion-blurred whip; his fingertip tracked with Apple Vision so the button or card appears where he points and flips when he taps; subtle zoom + sudden punch-ins; real posts piled behind his head; grey BEFORE that snaps to colour on "Now"; the tool's real UI rebuilt on paper. Built on `html-canvas-animation`. Start: `.agents/skills/talk-and-point/scripts/new_reel.sh downloads/reelN/full`. Reel 31 is the worked example. |
+| `funky-edit` | Ali's "funky edit" (reel 33, the Kubai icons reel): a faceless reel in a dark voxel room at night with a voxel host and the Claude block, every spoken word on screen as big moving type, whips inside a room and pixel-block wipes between rooms, the mechanism as a 3D drawing that swings round and comes apart, real screenshots and a recorded demo card (before / after), silent dog and cat meme stickers on the funny words, the Dr.pimp voice with a bro-style script, low music cut to the words and light real effects at one level (16 dB under the voice). Built on `paper3d`, rendered by its fast GPU renderer. Start: `.agents/skills/funky-edit/scripts/new_reel.sh downloads/reelN/full`. Reel 33 is the worked example. |
 | `insta_zoom_pw_story` | **Only when Ali asks for it by name; never the default story shape.** A script pattern from Hari Ganesh's "AI hears your password from your keyboard" reel: impossible-sounding claim → proof with one name and one number → "how it works and how you'd build one" → a thing the viewer knows → one tiny question (E key against R key) → four drawn steps → the name at the midpoint → why → build recipe → honest catch → close. Beat sheet with word limits, topic test, picture rules, the reference reel's breakdown, an example script. Checker: `.agents/skills/insta_zoom_pw_story/scripts/check_story.py script.md` |
+
+## Saved voices
+
+- **Dr.pimp voice** (also “Dr.pimp”, “Dr pimp voice” or “Dr Pimp”): the approved clean young male narrator from the VLC + Kakao design reel. When the user asks for this voice, read [its reuse instructions](downloads/voices/dr-pimp/README.md) and use the saved reference and settings in that folder. VoiceStudio profile `71a38679` is named **Dr.pimp voice**; engine **VoxCPM2**. Preserve this identity; do not design a replacement. The folder includes the original clean reference, an approved delivery preview, settings, and a portable profile bundle. Media stays local in ignored `downloads/`.
 
 ## Sound effects library
 
@@ -52,7 +57,13 @@ on purpose (media never goes in git). New takes with a set length, peak time or 
 - Every video gets subtle camera motion: a slow zoom in and out (about 1.00 to 1.045, turning at each beat, a little
   further on the punchline) on the picture, so the frame is always changing. Captions and titles stay still, and
   the zoom never goes below 1.0, so no edge shows.
-- Render with the fast renderers by default: `tools/render_gpu.py` for `paper3d` films, `tools/render_fast.py` for
+- Every video that teaches a tool shows it working. One real demo is recorded on this Mac and put in the video: the
+  tool actually being installed or used (a screen recording of the real thing, not a redrawn screen), and what it made
+  as a before and an after (for icons: the app with its old icons, then the same app with the new ones). Every example
+  is shown that way, before then after. The agent records it (Ali only films himself); tools installed for a demo go in
+  `downloads/reelN/demo-tools/` with a `CLEANUP.md`. Write the demo and the before / after into the script's picture
+  column before anything is built, and keep the demo short and about the result, never a click-by-click tutorial.
+- Render with the fast renderers by default: `tools/render_gpu.py` for `paper3d` and `funky-edit` films, `tools/render_fast.py` for
   `html-canvas-animation` and `talk-and-point` films. The old screenshot renderers (`render3d.py`, `render_local.py`)
   are only the fallback when a fast one refuses a page. An older project without them: re-run the skill's
   `new_film.sh` on it (it only adds missing files).

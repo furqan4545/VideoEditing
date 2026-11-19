@@ -83,7 +83,7 @@ unless he asks for the dark one.
 ## House rules on top
 
 The reference is faceless, uses an AI voice, runs at 3.7 words a second and ends on "comment the word and I'll send
-it". Ali's version changes four things:
+it". Ali's version changes five things:
 
 - **The claim is Ali on camera.** The result plays right after his line (or beside him), then the film moves into the
   board through a move, never a hard cut. When he gives a hook or outline, use it word for word.
@@ -91,6 +91,16 @@ it". Ali's version changes four things:
 - **No gate.** Nothing is held back behind a comment. The build steps go in the description; the last line is an
   apply-it line plus a share line, or a keyword as a vote when he asks for one.
 - **His words.** 5th-grade words, full sentences, nothing hard to say. No sentence over 20 words.
+- **A real demo and a before / after, always.** When the reel teaches a tool, the film shows one working example
+  recorded on Ali's Mac: the tool really being installed or used (a screen recording of the real thing, not a redrawn
+  screen), and what it made as a before and an after (for icons: the app with its old icons, then the same app with
+  the new ones). The demo is the picture of the `recipe` beat, because the build IS the demo; the before / after can
+  also open the `claim`, where the picture has to prove the line. Every other example in the film is shown the same
+  way, before then after. The agent records it on this Mac (Ali only films himself); tools installed for it go in
+  `downloads/reelN/demo-tools/` with a `CLEANUP.md`. Keep it short and about the result: a few seconds of the real run,
+  never a click-by-click tutorial. His words, 19 Nov 2026: "always always show one working example of demo, recorded
+  from my laptop in the video. always show live demo of creating or using the tool we are teaching, if it is about
+  icon, show before and after.. always show examples like before and after."
 
 Facts about real people, companies and papers are checked against the source and framed honestly (name the
 universities, not "scientists"). Put the research in `downloads/reelN/research/`.
@@ -99,6 +109,9 @@ universities, not "scientists"). Put the research in `downloads/reelN/research/`
 
 1. Run the topic test. Read the source. Write down: the claim, who, the one number, the steps, the tiny pair, the
    catch.
+   For a tool: run it for real on this Mac before you write. Record the screen while it works (the one-line install or
+   the ask, the tool doing the job, the result) and keep the same thing before and after. What really happened in that
+   run is what the `recipe` row says and shows.
 2. Write the script as one table, `| Beat | Script | Action |`, one row per beat, in a file like
    `downloads/reelN/script.md`. Copy [examples/keyboard_sound.md](examples/keyboard_sound.md) as the start.
 3. Check it:
@@ -110,6 +123,8 @@ universities, not "scientists"). Put the research in `downloads/reelN/research/`
    It checks the order of the beats, the word limit of each, the length at his pace, that `name` sits in the middle,
    that the proof has a number, that the question is one question, and that the close has no gate. It also prints which
    word links each sentence to the one before; a row marked `no link` needs a look.
+   For a reel that teaches a tool, add `--tool`: the Action column must then hold a recorded demo and a before / after,
+   or the check fails (without the flag it only reminds you).
 4. Show Ali the clean table with the word count and length:
 
    ```bash

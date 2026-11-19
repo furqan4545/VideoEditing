@@ -1,0 +1,96 @@
+{
+ "voice": "dr-pimp",
+ "whisper_prompt": "Claude Code, Kubai, icons, skill file, Opus 5.5, React, Vue, HTML.",
+ "lines": [
+  {
+   "key": "claim",
+   "text": "Bro, Claude can now draw every icon in your app. Animated. One style. From one sentence.",
+   "direction": "hyped confident bro hook, bright energy, punchy, each short phrase lands hard",
+   "seed": 742,
+   "show": "Bro. Claude can now draw every icon in your app. Animated. One style. From one sentence."
+  },
+  {
+   "key": "proof",
+   "text": "A dev called Koo-bye wrote one whole style down in a skill file. That skill has already drawn over twenty-eight hundred icons. All free.",
+   "direction": "casual storyteller bro giving proof, impressed and rising on twenty-eight hundred, grinning on All free",
+   "show": "A dev called Kubai wrote one whole style down in a skill file. That skill has already drawn over 2,800 icons. All free."
+  },
+  {
+   "key": "promise",
+   "text": "Here's how this shit works, and how you use it.",
+   "direction": "relaxed confident invitation, casual, a little cheeky on this shit",
+   "gap": 0.3
+  },
+  {
+   "key": "anchor",
+   "text": "Ask A.I. for an icon twice, and you get two different styles. What the fuck is this?",
+   "direction": "casual and knowing, then comic disbelief, emphatic and funny on What the fuck is this",
+   "show": "Ask AI for an icon twice, and you get two different styles. What the fuck is this?"
+  },
+  {
+   "key": "question",
+   "text": "So how does it draw a folder and a lock that look like one guy made both?",
+   "direction": "genuinely curious bro, leaning in, rising question"
+  },
+  {
+   "key": "step1",
+   "text": "Alright, let's cook. Every icon is built like a folder. Back piece. White sheet. Front piece.",
+   "direction": "relaxed confident bro energy, hyped on let's cook, then a clear beat of silence after each of the three pieces",
+   "pauses": {
+    "folder,": 0.2,
+    "piece,": 0.26,
+    "sheet,": 0.26
+   }
+  },
+  {
+   "key": "step2",
+   "text": "Next, every piece gets a fat outline on the outside, so the shape never shrinks.",
+   "direction": "casual clear teacher bro, steady, punch on fat outline and on outside"
+  },
+  {
+   "key": "step3",
+   "text": "Then one color paints the whole thing. Light, dark, shadow, all from that one color.",
+   "direction": "casual clear teacher bro, a little wonder, quick list rhythm on light, dark, shadow"
+  },
+  {
+   "key": "step4",
+   "text": "Last, every part gets two poses. Rest and hover. That's the whole fucking trick.",
+   "direction": "casual and simple, a beat before Rest and hover, amused deadpan on the last sentence"
+  },
+  {
+   "key": "name",
+   "text": "So style is not taste, bro. It's a list of rules. A skill.",
+   "direction": "quiet knowing tone, then a satisfied reveal, slower and warmer on A skill",
+   "gap": 0.55
+  },
+  {
+   "key": "read",
+   "text": "Same layers. Same outline. Same light.",
+   "direction": "crisp confident three even beats, a clear pause after each"
+  },
+  {
+   "key": "why",
+   "text": "A folder and a lock are different things, but they follow the same rules. So they match. And they move like the real thing.",
+   "direction": "warm explaining bro, relief of understanding, a smile on like the real thing"
+  },
+  {
+   "key": "recipe",
+   "text": "So you paste one line into Claude Code. Then you say, draw icons for my app. It draws them, checks its own screenshots, and fixes its own mess.",
+   "direction": "energetic and practical, quick clear steps, impressed on checks its own screenshots, amused on fixes its own mess"
+  },
+  {
+   "key": "catch",
+   "text": "The catch? It needs a strong model that can see images. Like Opus five point five.",
+   "direction": "honest lower tone, candid aside, short pause after The catch",
+   "show": "The catch? It needs a strong model that can see images. Like Opus 5.5.",
+   "gap": 0.45
+  },
+  {
+   "key": "close",
+   "text": "Too lazy to draw? The repo also comes with twenty-eight hundred icons, ready to use right now. Free. Link is in the description. Or comment SKILL, and I will send you detailed instructions with the repo link.",
+   "direction": "friendly teasing on Too lazy to draw, generous and upbeat, clear emphasis on SKILL, warm relaxed ending",
+   "show": "Too lazy to draw? The repo also comes with 2,800 icons, ready to use right now. Free. Link is in the description. Or comment SKILL, and I will send you detailed instructions with the repo link.",
+   "gap": 0.4
+  }
+ ]
+}

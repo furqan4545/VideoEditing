@@ -1,0 +1,15 @@
+{
+  "voice": "dr-pimp",
+  "whisper_prompt": "Claude Code, funky edit, voxel.",
+  "lines": [
+    { "key": "hook", "text": "Bro. This is the funky edit.",
+      "direction": "hyped confident bro hook, bright energy, punchy" },
+    { "key": "host", "text": "Big words. A voxel room. What the fuck is this?",
+      "direction": "casual and knowing, then comic disbelief, emphatic and funny on What the fuck is this" },
+    { "key": "board", "text": "Alright, let's cook. Every part gets its own layer. Back. Middle. Front.",
+      "direction": "relaxed confident bro energy, hyped on let's cook, then a clear beat of silence after each of the three parts",
+      "pauses": { "Back.": 0.26, "Middle.": 0.26 } },
+    { "key": "close", "text": "Now go make your own.", "gap": 0.4,
+      "direction": "warm, sure, a little grin" }
+  ]
+}

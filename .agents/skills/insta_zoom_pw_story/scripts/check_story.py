@@ -4,6 +4,7 @@
   python3 check_story.py script.md              beats, word limits, length, midpoint, chain hints
   python3 check_story.py script.md --clean      print the Script | Action table to show Ali, with count and length
   python3 check_story.py script.md --wps 2.6    pace for the length: words a second, pauses included
+  python3 check_story.py script.md --tool       a reel that teaches a tool: a recorded demo and a before / after are required
 
 The file holds one markdown table, | Beat | Script | Action |, one row per beat, in this order:
 claim, proof, promise, anchor, question, step (3 to 5 rows), name, read (optional), why, recipe, catch, close.
@@ -65,6 +66,7 @@ def main():
     ap.add_argument("--clean", action="store_true", help="print the Script | Action table only")
     ap.add_argument("--wps", type=float, default=2.6, help="words a second, pauses included (default 2.6)")
     ap.add_argument("--allow-gate", action="store_true", help='allow a "comment X and I will send it" close')
+    ap.add_argument("--tool", action="store_true", help="the reel teaches a tool: the Action column must show a recorded demo and a before / after")
     a = ap.parse_args()
 
     rows = parse(a.script)
@@ -131,6 +133,13 @@ def main():
         fails.append("question: must be exactly one question")
     if not a.allow_gate and re.search(r"\bcomment\b[^.?!]*\b(send|dm|message|link)\b", row("close").lower()):
         fails.append('close: a gate ("comment X and I will send it"). Put it in the description instead')
+    # Ali's rule (19 Nov 2026): a tool reel always shows one working example recorded on his Mac, and a before / after
+    acts = " ".join(act for _, _, act in rows).lower()
+    need = fails if a.tool else hints
+    if not re.search(r"screen recording|recorded|recording of|live demo|real demo|the real run", acts):
+        need.append("no recorded demo in the Action column: a tool reel shows one working example recorded on the Mac (make it the recipe row)")
+    if not (re.search(r"\bbefore\b", acts) and re.search(r"\bafter\b", acts)):
+        need.append("no before / after in the Action column: show what the tool made as a before and an after")
     if "name" in beats:
         at = 100 * sum(counts[:beats.index("name")]) / total
         ok = MID[0] <= at <= MID[1]
