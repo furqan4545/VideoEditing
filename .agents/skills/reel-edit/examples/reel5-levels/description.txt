@@ -1,0 +1,33 @@
+I made a FREE AI voice more human every level 😳 Level 6 is my own voice… and it got creepy
+
+Levels 2 to 6 were made in VoiceStudio: free, open source, runs on YOUR laptop. Level 1 is an old-school computer voice, just to compare.
+
+The 6 levels:
+1️⃣ Old computer voice: no pauses, no feelings 🤖
+2️⃣ Add punctuation. Dots… and full stops give it room to breathe
+3️⃣ Switch to an emotion engine (VoxCPM2) and write how it should feel: "(nervous, stammering)"
+4️⃣ Same engine, new feeling: "(offended, sassy)"
+5️⃣ Type [laughter] in the text and it really laughs 😂
+6️⃣ Clone your own voice from a short clip and pick it as the voice
+
+🔗 github.com/debpalash/VoiceStudio
+(Links in captions aren't clickable, so copy it into your browser.)
+
+⚡ Easiest setup: open Claude Code and paste this:
+"Install the VoiceStudio app on this device and verify it works, following https://github.com/debpalash/VoiceStudio/blob/main/docs/install/agent.md"
+
+Or install it yourself:
+🍎 Mac (Apple Silicon): curl -fsSL https://voicestudio.sh/install | sh
+🪟 Windows 10/11 (PowerShell): irm https://voicestudio.sh/install.ps1 | iex
+🐧 Linux: same command as Mac
+
+The emotion engines are optional downloads in the app's Model Manager.
+
+Good to know:
+• The app is free (AGPL-3.0). Each voice model has its own licence, shown in the Model Manager. Check it before paid client work.
+• Only clone voices you have permission to use.
+• Not sponsored. Built by Palash Debnath (debpalash on GitHub).
+
+Save this and try level 6 with your own voice 🎙️
+
+#voicestudio #aivoice #voiceclone #elevenlabs #aitools #contentcreator #opensource

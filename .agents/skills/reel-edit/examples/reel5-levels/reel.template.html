@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #0b0b0d; }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: "Inter", sans-serif; }
+
+      /* Ali: slow always-on zoom / whips + punch-ins */
+      #ali-cam, #ali-move, #ali-zoom { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #ali-zoom video, #freeze { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+      #ali-zoom video { object-fit: cover; }
+      #freeze-img { width: 1080px; height: 1920px; display: block; }
+
+      /* TikTok-style heading: black text on white rounded boxes, one per line */
+      #title { position: absolute; left: 0; top: 150px; width: 1080px; z-index: 6; text-align: center; }
+      #title .tl { margin-bottom: 0; line-height: 0; }
+      #title .tl span { display: inline-block; background: #ffffff; color: #0d0d0d; font-weight: 800; font-size: 60px; line-height: 1;
+        padding: 14px 26px 16px; border-radius: 18px; }
+      #title .tl + .tl span { margin-top: -6px; }
+      #title b { color: #fe2c55; font-weight: 900; }
+
+      /* the demo card above Ali's head */
+      #card-wrap { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 5; pointer-events: none; }
+      #card { position: absolute; left: 90px; top: 372px; width: 900px; height: 346px; background: #ffffff; border-radius: 30px;
+        box-shadow: 0 22px 60px rgba(0, 0, 0, 0.35); padding: 24px 30px 0; }
+      .chead { position: relative; height: 52px; display: flex; align-items: center; }
+      .lvl { position: relative; width: 232px; height: 52px; flex: none; }
+      .lvn { position: absolute; left: 0; top: 6px; font-weight: 900; font-size: 38px; color: #0d0d0d; white-space: nowrap; opacity: 0; }
+      .lvn i { font-style: normal; color: #7c7c86; }
+      .chips { position: relative; width: 410px; height: 52px; flex: none; }
+      .chip { position: absolute; left: 0; top: 4px; padding: 7px 18px 9px; border-radius: 30px; background: #f0f0f3; color: #2a2a30;
+        font-weight: 700; font-size: 28px; white-space: nowrap; opacity: 0; }
+      .dots { margin-left: auto; display: flex; gap: 10px; }
+      .dots b { width: 22px; height: 22px; border-radius: 50%; background: #dcdce2; }
+      .ctext { position: relative; height: 150px; margin-top: 16px; }
+      .lt { position: absolute; left: 0; top: 0; width: 840px; font-weight: 600; font-size: 34px; line-height: 1.32; color: #85858f; opacity: 0; }
+      .lt .tk { opacity: 0; }
+      .lt mark { background: #ffe14d; color: #0d0d0d; border-radius: 7px; padding: 0 5px; display: inline; }
+      .lt.robot { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 33px; }
+      .cwave { display: flex; align-items: center; gap: 18px; height: 84px; margin-top: 10px; border-top: 2px solid #efeff2; }
+      .play { width: 50px; height: 50px; border-radius: 50%; background: #0d0d0d; color: #ffffff; font-size: 22px; line-height: 50px; text-align: center; flex: none; }
+      .bars { display: flex; align-items: center; gap: 6px; height: 60px; flex: 1; }
+      .bars b { flex: 1; height: 60px; border-radius: 4px; background: #0d0d0d; transform: scaleY(0.1); }
+
+      /* TikTok-style captions: white, bold, black outline, the spoken word yellow */
+      .cap { position: absolute; left: 40px; width: 1000px; top: 1490px; text-align: center; z-index: 7; }
+      .capbox { display: inline-block; color: #ffffff; font-weight: 800; font-size: 82px; line-height: 1.08;
+        -webkit-text-stroke: 14px #000000; paint-order: stroke fill; text-shadow: 0 6px 14px rgba(0, 0, 0, 0.45); }
+      .capbox span { display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="__TOTAL__" data-width="1080" data-height="1920" data-motion-blur="on">
+      <div id="ali-cam"><div id="ali-move"><div id="ali-zoom">
+        __VIDEOS__
+        <div id="freeze" class="clip" data-start="__FREEZE_START__" data-duration="__FREEZE_DUR__" data-track-index="0" data-motion-blur="off"><img id="freeze-img" src="assets/freeze_end.png" /></div>
+      </div></div></div>
+
+      <div id="card-wrap" class="clip" data-start="0" data-duration="__CARD_END__" data-track-index="4"><div id="card">
+        <div class="chead">
+          <div class="lvl">__LEVELS__</div>
+          <div class="chips">__CHIPS__</div>
+          <div class="dots"><b id="dot1"></b><b id="dot2"></b><b id="dot3"></b><b id="dot4"></b><b id="dot5"></b><b id="dot6"></b></div>
+        </div>
+        <div class="ctext">__TEXTS__</div>
+        <div class="cwave"><div class="play">▶</div><div class="bars">__BARS__</div></div>
+      </div></div>
+
+      <div id="title" class="clip" data-start="0" data-duration="__TOTAL__" data-track-index="5">
+        <div class="tl"><span>I made a <b>FREE</b> AI voice</span></div>
+        <div class="tl"><span>more human every level 😳</span></div>
+      </div>
+
+      __CAPS__
+
+      <!-- the whole soundtrack: Ali + the AI levels + music + effects, mixed in sound/mix.py -->
+      <audio id="mix" class="clip" data-start="0" data-duration="__TOTAL__" data-track-index="9" data-volume="1" src="assets/mix.wav"></audio>
+    </div>
+    <script>
+      (function () {
+        const C = __CFG__;
+        const tl = gsap.timeline({ paused: true });
+
+        // --- always-on subtle zoom on Ali, turning at every shot; further on the punchline shot; slow push on the freeze
+        tl.set("#ali-cam", { transformOrigin: "540px 1000px" }, 0);
+        tl.set("#ali-move", { transformOrigin: "540px 1000px" }, 0);
+        C.SHOTS.forEach(([a, b], i) => {
+          const punch = i === C.PUNCHLINE;
+          const z0 = punch ? 1.0 : (i % 2 ? 1.045 : 1.0), z1 = punch ? 1.075 : (i % 2 ? 1.0 : 1.045);
+          tl.fromTo("#ali-cam", { scale: z0 }, { scale: z1, duration: punch ? b - a : Math.min(b - a, 4.2), ease: "sine.inOut", immediateRender: i === 0 }, a);
+        });
+        tl.fromTo("#freeze-img", { scale: 1.0 }, { scale: 1.05, duration: C.FREEZE[1] - C.FREEZE[0], ease: "sine.out", transformOrigin: "540px 1000px" }, C.FREEZE[0]);
+
+        // --- whips and punch-ins hide every take change
+        C.WHIPS.forEach(([tc, dir]) => {
+          tl.to("#ali-move", { x: -210 * dir, scale: 1.42, duration: 0.11, ease: "power3.in" }, tc - 0.11);
+          tl.fromTo("#ali-move", { x: 210 * dir, scale: 1.42 }, { x: 0, scale: 1, duration: 0.24, ease: "power3.out", immediateRender: false }, tc);
+        });
+        C.PUNCHES.forEach((tc) => {
+          tl.to("#ali-move", { scale: 1.3, duration: 0.1, ease: "power2.in" }, tc - 0.1);
+          tl.fromTo("#ali-move", { scale: 1.3 }, { scale: 1, duration: 0.38, ease: "expo.out", immediateRender: false }, tc);
+        });
+
+        // --- the card: drops in at the start, each level types in, the level number and dot pop, spoken words go black
+        tl.fromTo("#card", { y: -40, scale: 0.92, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.3, ease: "back.out(2)" }, 0);
+        C.LEVELS.forEach(([L, t0, t1, nTok], i) => {
+          const lt = "#lt" + L, lv = "#lvn" + L, ch = "#chip" + L;
+          tl.set([lt, lv, ch], { opacity: 1 }, t0);
+          if (t1 < C.CARD_END) tl.set([lt, lv, ch], { opacity: 0 }, t1);
+          tl.fromTo(lt + " .tk", { opacity: 0 }, { opacity: 1, duration: 0.01, stagger: Math.min(0.035, 0.42 / nTok), ease: "none" }, t0);
+          if (L > 1) tl.fromTo(lt + " mark", { scale: 1.6 }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, t0 + 0.12);
+          tl.fromTo(lv, { scale: 1.5, y: -6 }, { scale: 1, y: 0, duration: 0.3, ease: "back.out(3)" }, t0);
+          tl.fromTo(ch, { x: 30 }, { x: 0, duration: 0.25, ease: "power3.out" }, t0);
+          tl.set("#dot" + L, { backgroundColor: L === 6 ? "#fe2c55" : "#0d0d0d" }, t0);
+          tl.fromTo("#dot" + L, { scale: 2.0 }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, t0);
+          if (i > 0) tl.fromTo("#card", { scale: 1.035 }, { scale: 1, duration: 0.3, ease: "power2.out" }, t0);
+        });
+        C.SPOKEN.forEach(([id, t]) => tl.set("#" + id, { color: "#0d0d0d" }, t));
+        tl.to("#card", { y: -260, opacity: 0, duration: 0.28, ease: "power3.in" }, C.CARD_END - 0.28);
+
+        // waveform: the AI voice's real loudness, scrolling right to left
+        const bars = document.querySelectorAll("#card .bars b"), NB = bars.length, P = { t: 0 };
+        const draw = () => {
+          const f = Math.round(P.t * 30);
+          bars.forEach((el, k) => {
+            const j = f - (NB - 1 - k), v = j >= 0 && j < C.ENV.length ? C.ENV[j] : 0;
+            const shape = 0.55 + 0.45 * Math.abs(Math.sin(k * 1.7 + j * 0.83));
+            el.style.transform = "scaleY(" + (0.08 + 0.92 * v * shape).toFixed(3) + ")";
+          });
+        };
+        tl.fromTo(P, { t: 0 }, { t: C.TOTAL, duration: C.TOTAL, ease: "none", onUpdate: draw }, 0);
+
+        // --- captions: pop in, the spoken word lights yellow
+        C.CAPS.forEach(([i, t0, words]) => {
+          if (t0 > 0.01) tl.fromTo("#cap" + i + " .capbox", { scale: 0.8 }, { scale: 1, duration: 0.12, ease: "back.out(2.5)" }, t0);
+          words.forEach(([k, a, b], j) => {
+            tl.set("#cw" + i + "_" + k, { color: "#ffe14d" }, Math.max(0, a));
+            if (j < words.length - 1) tl.set("#cw" + i + "_" + k, { color: "#ffffff" }, b);
+          });
+        });
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

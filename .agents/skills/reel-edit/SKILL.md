@@ -1,6 +1,6 @@
 ---
 name: reel-edit
-description: Edit Ali's Instagram reels in his house style from his phone takes, the way the VoiceStudio reels 3 and 4 were made. The takes are cut tight (no gap over 0.5 s), and the hook is always on camera. The picture always zooms subtly, and every take change is hidden behind a whip, punch-in, full-frame tool panel or hand zoom-through. Captions are serif with the spoken word lit, STOP/START cards sit above the head, and demo voices are made in the tool itself. The music is cut to the words and dead silent before a drop; real SFX all sit at one level; the master is -14 LUFS. Also covers the Instagram description. Use when the user gives a folder of takes and asks for a reel or video edit, says "same style as last time / reel 3 / reel 4", or wants a talking-head tool explainer with demos, a cartoon or panels.
+description: Edit Ali's Instagram reels in his house style from his phone takes, the way the VoiceStudio reels 3 and 4 were made. The takes are cut tight (no gap over 0.5 s), and the hook is always on camera. The picture always zooms subtly, and every take change is hidden behind a whip, punch-in, full-frame tool panel or hand zoom-through. Captions are serif with the spoken word lit, STOP/START cards sit above the head, and demo voices are made in the tool itself. The music is cut to the words and dead silent before a drop; real SFX all sit at one level; the master is -14 LUFS. Also covers the Instagram description. Use when the user gives a folder of takes and asks for a reel or video edit, says "same style as last time / reel 3 / reel 4 / reel 5", wants a talking-head tool explainer with demos, a cartoon or panels, or a "format 3" levels reel (a demo card above the head that gets better level by level, TikTok title and captions).
 ---
 
 # Reel edit (Ali's style)
@@ -9,7 +9,18 @@ This is the style of Ali's Instagram tech channel: tools explained "like to a 5-
 
 - **`template/`**: reel 4, "Stop making robotic AI voiceovers" (59.8 s). Talking head, STOP/START format, full-frame tool panels and demo voices made in VoiceStudio. **Start every new reel from it.**
 - **`examples/reel3-cartoon/`**: reel 3, "ElevenLabs is never going to sponsor me…" (53.4 s). The same pieces plus a cartoon old man who speaks five languages. Ali and the cartoon swap by zooming through a hand. Use it when a reel needs an animated character.
-- `examples/*/description.txt` are the two Instagram descriptions; `examples/reel4-stop-start/script.md` is the script format (SAY and DO kept apart).
+- **`examples/reel5-levels/`**: reel 5, "How human can a FREE AI voice get?" (37.2 s), format 3. One take, a TikTok-style title that never leaves, a small demo card **above Ali's head** that gets better level by level (so people stay to see how far it goes), and plain TikTok captions. Use it when the user asks for "format 3", "levels", or a demo that improves step by step. See "Format 3" below.
+- `examples/*/description.txt` are the Instagram descriptions; `examples/reel4-stop-start/script.md` is the script format (SAY and DO kept apart).
+
+## Format 3: levels (reel 5)
+
+- **Script:** copy only the reference's mechanics, never its script, topic, line pattern or series name. Ali gives an instruction ("Now make it nervous."), the demo plays, Ali reacts on camera.
+- **Picture under a demo** is Ali's real reaction from the take. In `cut/edl.py` a demo row says `("lead",)` (the footage runs straight into his next line, no cut) or `("at", T)` (a chosen moment, like the facepalm). Each demo row starts with a cut, hidden by a whip or punch-in.
+- **Layout (Ali's face sits low in his frame):** title boxes at y 150, the card at y 372–718 above his head, captions at y 1490. The card leaves when he leans in at the end.
+- **The card** shows exactly what was typed. This level's change (dots, direction, tag) is marked yellow; spoken words go from grey to black on Whisper's word times. It also has `LEVEL n/6` with six dots and a setting chip, plus a waveform drawn from the real voice's loudness. Each level types in on Ali's instruction word.
+- **Captions:** Inter 800, 82 px, white with a 14 px black outline, the spoken word yellow, ≤3 words. The AI's words are read from the card, not from captions.
+- **Voices get better level by level:** level 1 can be a classic computer voice (`say -v Fred`, labelled "Old computer voice", never as the tool). Then come the default engine with punctuation, VoxCPM2 directions, the `[laughter]` tag, and Ali's clone. The clone does not whisper, whatever the direction says; it reads calmly. Check every take with Whisper, and with `earshot rank` for "nervous", "offended" and "laughing".
+- **Music:** the beat hits on the hook and goes dead silent under the robot. It slams back on Ali's reply and grows level by level (a gain ramp in `PIECES`). It is silent with a heartbeat under the clone, then comes back in on the last line.
 
 ## The style: rules every reel follows
 
@@ -199,6 +210,13 @@ The description follows `examples/*/description.txt`, and the whole thing stays 
 **Sound**
 - A boom right after a word masks it: "acting" vanished under the freeze boom. Leave about 0.25 s after the last word.
 - A word under loud music needs the lookahead duck plus the mid-band duck. Prove it with Whisper on the mix, not on the voice stem.
+- Find the layer that garbles a word by transcribing the stems apart (voice, voice + sfx, voice + music). In reel 5 three things turned "free AI tool" into "VEI 2":
+  - the keyboard-typing sound under the hook (no typing or other clicky texture under speech);
+  - reel 4's de-esser at `ratio + 12, max 8 dB` (reel 5 uses `+6, max 4`);
+  - the beat's opening vocal hit above -7 dB vs the voice.
+- `verify.py` measures sync with the zoom centred on 540,900. A reel zoomed about another point (reel 5: 540,1000) can fail a shot with a big push. Re-measure it with the real origin and scale before believing the flag.
+- **Voice: leave Ali's recording raw.** Reel 13: v1 (ffmpeg high-pass + de-esser + 3:1) was "muddy"; v2 (reel 11's studio chain) lifted the room tail and, with rubberband's speed-up, added echo (100 → 132 ms ring after each word). He judged six A/B samples and chose his raw take. So: no EQ, compression or dereverb; speed-up with ffmpeg `atempo` (`STRETCH=atempo`, less smear than rubberband R3), one plain gain per line. If the voice needs work, send A/B samples of the same lines (raw first) before rebuilding the reel. Effects levelled phone-weighted can still sit within 1-3 dB of the voice in 1 s windows: measure stems per second; his approved reel 13 levels are music bed -22 LUFS, duck 11 dB, effects 16 dB under the voice.
+- In a split layout (Ali in a framed box, reels 11 and 13) `verify.py`'s sync check fails every take (ncc near 0) because it looks for a full-frame face. Measure sync instead by cross-correlating frame-to-frame motion in his box of the render against his picture track (reel 13: best at 0 frames, `downloads/reel13/full`). Pre-rendering his picture on the reel clock (`cut/ali_track.py`: each piece at 1.10×, run on through its gap, crop centred on Apple Vision face boxes) makes the whole reel one `<video>` and keeps sync exact.
 
 **Footage**
 - iPhone footage is HLG; without the avconvert step it looks washed out on phones.
