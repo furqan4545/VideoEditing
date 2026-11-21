@@ -1,0 +1,100 @@
+[
+ {
+  "key": "hook",
+  "text": "Your Apple Watch doesn't actually feel your heartbeat. It watches your blood, using green light.",
+  "direction": "punchy cinematic hook, highly dynamic, a sly smile on doesn't actually, then drop low and intriguing on it watches your blood, lift on green light, moderate pace",
+  "seed": 719
+ },
+ {
+  "key": "run",
+  "text": "Imagine you're halfway through a run. Your heart is racing, and your watch says one fifty-five.",
+  "show": "Imagine you're halfway through a run. Your heart is racing, and your watch says 155.",
+  "direction": "vivid and energetic, rising excitement on heart is racing, playful bright lift on one fifty-five, moderate pace"
+ },
+ {
+  "key": "how",
+  "text": "But how can something sitting on your wrist know what your heart is doing?",
+  "direction": "genuinely curious, big questioning rise toward doing, warm and engaging, moderate pace"
+ },
+ {
+  "key": "leds",
+  "text": "Underneath the watch, tiny green lights flash hundreds of times every second.",
+  "direction": "amazed reveal, lean in on tiny green lights, punch and widen on hundreds of times every second, moderate pace"
+ },
+ {
+  "key": "green",
+  "text": "And they're green for a reason. Blood looks red because it bounces red light back. Green light, it swallows.",
+  "direction": "conspiratorial secret tone, playful, light emphasis on red and bounces, a teasing dip and smile on green light, it swallows, moderate pace"
+ },
+ {
+  "key": "skin",
+  "text": "So the green light goes into your skin. Some gets swallowed by your blood, and the rest bounces back into tiny light sensors.",
+  "direction": "clear storyteller, unhurried and measured, every word clear, tone falls on swallowed by your blood, lifts again on bounces back, moderate relaxed pace, never rushed"
+ },
+ {
+  "key": "clever",
+  "text": "But here's where it gets clever.",
+  "direction": "hushed and dramatic, slow and deliberate, a knowing grin, tension building, relaxed pace, never rushed"
+ },
+ {
+  "key": "beat",
+  "text": "Every time your heart beats, it pushes more blood into your wrist. More blood swallows more green, so less light comes back. Between beats, more comes back.",
+  "direction": "rhythmic and lively, punch every and beats, strong contrast: falling tone on less light comes back, rising bright tone on more comes back, moderate pace"
+ },
+ {
+  "key": "rate",
+  "text": "The change is tiny, less than one percent. But the watch sees it with every beat, and counts how often. That's your heart rate.",
+  "direction": "impressed whisper-like lean in on tiny, then confident and proud, a satisfying landing on that's your heart rate, moderate pace"
+ },
+ {
+  "key": "problem",
+  "text": "But there's another problem. When you run, every swing of your arm moves the blood in your wrist too.",
+  "direction": "dramatic twist with a worried lift on another problem, then explaining calmly and clearly, unhurried measured pace, never rushed"
+ },
+ {
+  "key": "rhythms",
+  "text": "So the watch sees two rhythms, your heart and your steps. Your heart beats about a hundred and fifty-five times a minute, and your feet land about a hundred and sixty-five times.",
+  "show": "So the watch sees two rhythms, your heart and your steps. Your heart beats about 155 times a minute, and your feet land about 165 times.",
+  "direction": "clear and engaged, unhurried, each number said slowly and clearly, rising surprise on how close the numbers are, relaxed moderate pace, never rushed"
+ },
+ {
+  "key": "steps",
+  "text": "Sometimes the watch even counts your steps instead of your heartbeats.",
+  "direction": "amused disbelief, playful smile in the voice, big tonal swing on instead of your heartbeats, unhurried relaxed pace"
+ },
+ {
+  "key": "motion",
+  "text": "So the watch uses a motion sensor to feel every swing, finds your step rhythm, and throws it away. What's left is your heartbeat.",
+  "direction": "confident hero solution, energetic, punch on throws it away, warm satisfying drop on what's left is your heartbeat, moderate pace"
+ },
+ {
+  "key": "nobody",
+  "text": "But here's what almost nobody knows.",
+  "direction": "intimate dramatic hush, a secret, slow and deliberate, pitch rising with suspense, never rushed"
+ },
+ {
+  "key": "bp",
+  "text": "On newer watches, this same green light can warn you about high blood pressure.",
+  "direction": "big impressed reveal, bright and loud, strong weight on high blood pressure, moderate pace"
+ },
+ {
+  "key": "hose",
+  "text": "A healthy blood vessel is soft, like a new garden hose, and every heartbeat makes it bulge. High blood pressure makes it stiff, like an old hose left in the sun.",
+  "direction": "warm vivid storytelling, light and bouncy on soft and bulge, then a darker heavier tone on stiff and old hose left in the sun, moderate pace"
+ },
+ {
+  "key": "bulge",
+  "text": "The green light sees that bulge. If your blood vessels look stiff for thirty days, the watch tells you to get your blood pressure checked.",
+  "direction": "caring and clear, tone rises on thirty days, firm and serious on get your blood pressure checked, moderate pace"
+ },
+ {
+  "key": "payoff",
+  "text": "So your Apple Watch never feels your heartbeat. It just watches your blood swallow green light.",
+  "direction": "satisfying conclusion, warm and proud, a gentle smile, clear landing on swallow green light, moderate pace"
+ },
+ {
+  "key": "follow",
+  "text": "Follow for more content like this.",
+  "direction": "upbeat friendly close, big smile, energetic, moderate pace"
+ }
+]

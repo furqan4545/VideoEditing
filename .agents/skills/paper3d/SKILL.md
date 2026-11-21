@@ -22,8 +22,10 @@ onetake is PolyForm Noncommercial: personal reels are fine, tell Ali before a fi
 3. **No long extreme close-ups.** A macro shot lasts a few seconds, then the camera pulls back to a view that shows
    the parts together, so the viewer always knows where they are and sees the full process. Alternate close and wide.
 4. **Captions are the "simple story tell caption"** (the black captions of reel 15, which he called perfect): a few
-   words at a time, spoken words near-black, coming words grey, no bold, no movement. The kit loads it by default from
-   the `simple-storytell-caption` skill. Do not design another caption look.
+   words at a time, spoken words near-black, coming words grey, no movement. The kit loads it by default from
+   the `simple-storytell-caption` skill. Do not design another caption look. Since reel 40 (approved): **semibold (600)**,
+   in the **lower third** (y ~1385), and **never dark-on-dark**: run `examples/reel40/tools/capplan.py` to place every
+   chunk (see the cinematic rules below).
 5. **Voice on top, music low.** Music stem at least 15 LU under the voice stem; check the loudest music moments one
    by one. His raw voice gets only the 1.10x speed-up and one gain per line.
 6. **One take, no cuts.** Every change of place or scale is a camera move (dive, pull-out, whip, a ride on something
@@ -76,6 +78,33 @@ It never overwrites a file, so re-running it only adds what is missing: run it o
 7. **Thumbnail:** edit `film/thumb.js`, render `tools/still.py out/thumb.png 0.5 "thumb=1&only="`. Models only, no photo of Ali
    unless he asks.
 
+## Cinematic rules (reel 40, Apple Watch heart: "OMG now this is called cinematic movie, awesome job")
+
+Reel 40 v3 is the bar for a cinematic 3D film. Its sources are in `examples/reel40/` (world, shots, `cine.js` wrapped
+paper look, `assets/hand.js` cut-open hand, `assets/derm.js` inside the skin, `watch.js`, `runner.js`, caption plan,
+mix, voice joiner, the frame-audit workflow). Every rule below came from his notes on v1 and v2.
+
+10. **Script first.** Remaking a reference: its original script, then a ~30% better one with one wow fact that needs
+    no setup; plain 5th-grade words; a real-life analogy for anything abstract (the garden hose). Build only after "yes".
+11. **Voice with breath.** Dr.pimp voice, moderate pace, a tonal move in every line, ~0.45 s after every sentence,
+    0.8-1.1 s where the picture changes place or tension builds. Never non-stop; let each scene finish.
+12. **Open on the real product photo, moving from frame 0.** The photo peels away to reveal the 3D product under it
+    (no cross-fade double exposure), then the camera goes down and inside.
+13. **White crumpled wrapped paper**, floor and backdrop (`cine.js`). Never a navy / blue void.
+14. **Never a cut, never empty flights.** Change place THROUGH something: push into one watch's glass, come out of
+    another's (`R.deskScreen`, `R.rscreen` in `00_hook.js`), or dive into skin through a frame-filling flash. The camera
+    never passes through an object: add a key that goes round it.
+15. **Show the mechanism in real 3D**: light hits blood and is swallowed (a flash), the rest bounces back to the
+    sensors (they blink), vessels visibly swell on the beat. Never vague bouncing dots.
+16. **A body explainer starts on the real body part**, cuts it open on screen (a laser plane sweeps in; the cut face
+    is exact anatomy; real vessels cut lengthwise with flowing cells), shows the veins, then dives inside.
+17. **Fill the 9:16 frame, subject centred.** Stack the picture top to bottom (device, skin, vessels, fat and muscle
+    at the bottom). No flat ceilings or floors at grazing angles, no strips of empty paper. People fill ~75% of the
+    height. A watch face is shown whole (d >= 0.125 m for a 46 mm watch), never "55" for 155.
+18. **Audit before delivery**: stills every 0.5 s checked by 4 agents (one per 30 s, `tools/frame_audit_workflow.js`)
+    for empty areas, off-centre subjects, unreadable captions and glitches; fix, check the fixes, then deliver. Keep
+    every delivered version (v2, v3 side by side) and back up the old sources.
+
 ## What is in the box
 
 - `kit/`: `kit.js` (world, light that follows the camera, camera, labels, captions, footage, seek), `comp.html`, templates.
@@ -86,8 +115,18 @@ It never overwrites a file, so re-running it only adds what is missing: run it o
 - `references/KIT.md`: how models, shots, camera keys, stations, labels and previews work. Read it before writing a shot.
 - `references/lessons.md`: what broke on reel 15 and the fixes. Read it before staging.
 - `examples/reel15/`: the whole film's world, shots, storyboard, thumbnail, voice cut and mix scripts.
+- `examples/reel40/`: the approved cinematic film (Apple Watch heart): the cut-open hand, the inside of the skin, joins
+  through watch glass, the wrapped-paper look, `tools/capplan.py` (caption plan), the frame-audit workflow, mix and voice joiner.
 
 ## Gotchas that cost time
+
+- (reel 40) A cut-open model is drawn by a shader: back faces seen through the cut paint the anatomy at the cut plane
+  and write `gl_FragDepth`, and the shadow uses a cut `customDepthMaterial`. Keep such a mesh OUT of the AO pass
+  (`noAO`) but IN the depth pass, or depth of field smears it into a see-through ghost.
+- (reel 40) An SDF forearm must be capped at the wrist, or its cylinder runs straight through the hand. Fingers blend
+  into the palm one by one, then join with a hard min, or they melt into one paddle; splay them a little.
+- (reel 40) Glow sprites inside tissue need `depthTest: false` (no clipped squares), but sprites drawn on a cut face
+  need `depthTest: true` or they show through the watch.
 
 - Local images cannot become WebGL textures under `file://` unless Chromium runs with `--allow-file-access-from-files
   --disable-web-security`: always use the project's `tools/*.py` (`render_gpu.py`, `render3d.py`), never onetake's `render.py` directly.
