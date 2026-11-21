@@ -1,15 +1,17 @@
 ---
 name: match-cut
-description: Turn photos, multiple clips, or one video into fast match cuts timed to Ali’s softened, double-speed camera shutter. Align shapes and faces, carry an action across camera angles, or jump between distant moments of a single take.
+description: Turn photos or footage into fast match cuts with fixed framing, warp blur in all four corners, and one new picture per softened 2× shutter click. Match shapes, faces, or action across scenes.
 ---
 
 # Match cut
 
-Deliver a playable MP4. Use the user's dropped files as the source material. A folder, a selection of individual files, a phone video, or a mixture of photos and clips all work. The default soundtrack is Ali’s camera-shutter recording alone.
+Deliver a playable MP4 from the user's photos, clips, or a mix of both. Shutter edits made entirely from photos default to 10 seconds at 60 fps. Honor a requested duration. The approved 10-second photo edit used 68 distinct pictures and 68 clicks. The number of pictures can vary with the material.
+
+Use one distinct picture or excerpt for each audible shutter click, including the opening picture. Hold the framing fixed between clicks. The warp-zoom look comes from a strong radial smear baked into all four corners. The center stays sharp and still. A video excerpt keeps its recorded motion. Use these defaults in every new match cut unless the user explicitly requests a change.
 
 ## Find the match
 
-Look at the source pictures or a contact sheet from the take. Choose the feature the viewer will follow. A coin rim can become a clock rim, an eye can stay on the same third of the frame, or a rightward hand in one scene can finish the gesture in a different scene. When the link is thematic, choose the order editorially and pass the files in that order with `--keep-order`.
+Look at the source pictures or a contact sheet from the take. For a photo edit from a folder containing photos and videos, select the still image files and pass their paths to the runner. Choose the feature the viewer will follow. A coin rim can become a clock rim, an eye can stay on the same third of the frame, or a rightward hand in one scene can finish the gesture in a different scene. When the link is thematic, choose the order editorially and pass the files in that order with `--keep-order`.
 
 In Ben Kaluza's reference, roughly 0:00.7–0:05.9 cycles through groups of disks, painted faces, moons and fans. Some images last just two frames. Around 0:19–0:23 the globe or disk stays centered as its surface changes. Use a short burst for a clear repeated silhouette. Give actions enough frames on each side for the viewer to see the motion. [Reference reel](https://www.instagram.com/reel/Df5T5Cxsau3/)
 
@@ -29,11 +31,11 @@ Run `scripts/match-cut` from **this skill's directory**, or call its installed p
   --aspect portrait -o downloads/match-cut/03
 ```
 
-- **Graphic matches.** Each input contributes one shot. Match the motif’s position, size and silhouette. Use `--motif circle` for disks and wheels, or `--motif face` for frontal faces. Automatic mode picks isolated silhouettes.
+- **Graphic matches.** Choose photos with a shared silhouette, eye line, or gesture and a visible change at each cut. Spread similar burst photos apart. Each distinct input contributes one shot. The runner skips copies with identical decoded pixels. Pick more distinct pictures for a denser edit at the same duration. Use `--motif circle` for disks and wheels, or `--motif face` for frontal faces. Automatic mode picks isolated silhouettes.
 - **Action matches.** Inspect the whole video. Pick the same phase of a gesture, screen direction and point of action across different camera shots. The runner searches out of order and prefers early → late → middle for the first three. It records the source time, detected shot number and region in `edit.json`. With a single unbroken take, use separated portions of the take and identify them as time jumps. If a detected scene change turns out to be camera shake, move that excerpt to a distinct moment before delivering.
-- **Shutter timing.** The default recording is `~/Desktop/MY VIDEO EDITING STUFF/Ali_BG_MUSIC/camera_sfx/alexis_gaming_cam-camera-shutter-346101.mp3`. The runner doubles its tempo with pitch preserved, applies a −12 dB high shelf at 2.2 kHz and a 5.8 kHz low-pass, then measures the attacks in that processed audio. The first frame opens on the first stroke. Each cut lands on the nearest 60 fps frame to another stroke. Leave the little pauses between bursts. Use `--pace burst` to retain closer attacks for movement, or `--duration` for a specified run time. A fixed set of photos uses one appearance per photo.
+- **Shutter timing.** The default recording is `~/Desktop/MY VIDEO EDITING STUFF/Ali_BG_MUSIC/camera_sfx/alexis_gaming_cam-camera-shutter-346101.mp3`. The runner doubles its tempo with pitch preserved, applies a −12 dB high shelf at 2.2 kHz and a 5.8 kHz low-pass, and isolates individual mechanical clicks. Exactly one click starts on the first frame of each shot. Holds are quiet after that click decays. Use `--pace burst` for closer attacks, or `--duration` for a specified run time.
 - **Sound choices.** Plain media drops use the shutter alone. `--shutter FILE` selects a replacement shutter recording. Use `--audio FILE` for an uninterrupted soundtrack or `--location-sound` for overlapping source audio only when the user explicitly requests that sound.
-- **Framing.** Default to the first input’s aspect ratio. Use `--aspect portrait`, `square`, or `landscape` when requested. Subtle camera motion runs continuously through the cuts.
+- **Framing.** Default to the first input’s aspect ratio. Use `--aspect portrait`, `square`, or `landscape` when requested. Use a single crop at the scale needed to fill the canvas. Let the matched subject guide the crop. Keep its scale and position constant for the entire shot.
 
 ## Carry one action across several clips
 
@@ -52,9 +54,9 @@ The timestamps are seconds from the sample start. If you seek into a longer clip
 
 ## Watch the joins and finish
 
-Open `match-cut.mp4` and its `joins-*.jpg` sheets. Each row shows the final two outgoing frames and the first two incoming frames. Trace the rim, eye, fingertip or direction of travel across the divider. For action, inspect the gesture at playback speed. A matched optical-flow direction is a candidate and `graphic fallback` flags a weak action match. Check every visible change in size, crop, direction, or gesture phase. Check the rendered audio with Earshot using the cut frames from the plan. On a shutter edit, listen for the start of the mechanical stroke as the new picture arrives.
+Open `match-cut.mp4` and its `joins-*.jpg` sheets. Each row shows the final two outgoing frames and the first two incoming frames. Trace the rim, eye, fingertip or direction of travel across the divider. For action, inspect the gesture at playback speed. A matched optical-flow direction is a candidate and `graphic fallback` flags a weak action match. For stills, compare the first and last frame of a hold for drift, and check a textured corner at viewing size for visible outward streaking. Check the exported duration and the shutter hits in Earshot against the cut frames in the plan. A sequence of N pictures needs N audible clicks and N−1 visible transitions, with the first click at the opening. Check in both directions for extra clicks and silent picture changes.
 
-To repair a join, copy `edit.json`. Set the shot's `anchor` to `[center_x, center_y, width, height]` in fractions of its **oriented source image**. A clock spanning x=.10–.50 and y=.20–.60 has anchor `[.30,.40,.40,.40]`. Set the common screen `target` and `fill` in the plan as needed. `fill` is the motif's longest dimension as a fraction of the output's shorter side. For action, adjust `in_seconds` to the matching phase and leave enough source frames for the shot. Preserve the shot lengths to keep the audio cut points. Render and inspect the revision:
+To repair a join, copy `edit.json`. Set the shot's `anchor` to `[center_x, center_y, width, height]` in fractions of its **oriented source image**. A clock spanning x=.10–.50 and y=.20–.60 has anchor `[.30,.40,.40,.40]`. The center places the crop toward the common screen `target` within the source bounds. For action, adjust `in_seconds` to the matching phase and leave enough source frames for the shot. Preserve the shot lengths to keep the cut points. If a shot length changes, its neighbors’ shutter clicks follow their new first frames. Earlier saved plans replay their original framing and mix. Start from the original inputs to give an older edit the current style.
 
 ```sh
 ~/.agents/skills/match-cut/scripts/match-cut --from-plan "/path/to/revised.json" \

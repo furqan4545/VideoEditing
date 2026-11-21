@@ -1,5 +1,6 @@
 """Analyze oriented source frames and compose the matched pictures."""
 
+import hashlib
 import json
 import math
 import subprocess
@@ -237,6 +238,7 @@ class Source:
     audio: bool
     hz: float
     samples: list
+    photo_digest: bytes | None = None
 
     @property
     def still(self):
@@ -265,6 +267,7 @@ def scan(path, motif="auto"):
             False,
             0,
             [describe(small, gray, None, 0, 0, motif, detector)],
+            hashlib.blake2b(pic, digest_size=16).digest(),
         )
     info = probe(path)
     video = next(
@@ -338,6 +341,69 @@ def compare(outgoing, incoming, action):
         + 0.85 * np.linalg.norm(outgoing.locus - incoming.locus)
         + 0.52 * graphic
     )
+
+
+def fixed_crop(frame, size, anchor, target):
+    """Fill the canvas once, positioning the motif within the available crop."""
+    width, height = size
+    ih, iw = frame.shape[:2]
+    scale = max(width / iw, height / ih)
+    cw, ch = max(1, round(width / scale)), max(1, round(height / scale))
+    cx, cy = anchor[:2] if anchor else (0.5, 0.5)
+    x = int(np.clip(round(cx * iw - target[0] * cw), 0, iw - cw))
+    y = int(np.clip(round(cy * ih - target[1] * ch), 0, ih - ch))
+    interpolation = cv2.INTER_AREA if scale <= 1 else cv2.INTER_CUBIC
+    return cv2.resize(frame[y : y + ch, x : x + cw], size, interpolation=interpolation)
+
+
+class CornerWarp:
+    """Radially smear the four corners while preserving the original center pixels."""
+
+    def __init__(self, size):
+        self.size = size
+        width, height = size
+        x = np.abs((np.arange(width, dtype=np.float32) + 0.5) * 2 / width - 1)
+        y = np.abs((np.arange(height, dtype=np.float32) + 0.5) * 2 / height - 1)[
+            :, None
+        ]
+
+        def feather(v, low, high):
+            t = np.clip((v - low) / (high - low), 0, 1)
+            return t * t * (3 - 2 * t)
+
+        mask = feather(x, 0.16, 0.77) * feather(y, 0.13, 0.77)
+        self.mask = (mask * feather(np.hypot(x, y), 0.54, 1.04))[:, :, None]
+        self.sample_size = resized_size(width, height, min(960, max(size) / 2))
+        sw, sh = self.sample_size
+        yy, xx = np.indices((sh, sw), dtype=np.float32)
+        dx, dy = xx - (sw - 1) / 2, yy - (sh - 1) / 2
+        radius = np.hypot(dx / (sw / 2), dy / (sh / 2))
+        stretch = np.minimum(1.18, 0.30 + 0.65 * radius**1.4)
+        self.rays = []
+        for distance in np.linspace(0.13, 0.61, 41, dtype=np.float32):
+            step = stretch * distance
+            self.rays.append(
+                cv2.convertMaps(xx - dx * step, yy - dy * step, cv2.CV_16SC2)
+            )
+        weights = np.linspace(1.15, 0.72, len(self.rays), dtype=np.float32)
+        self.weights = weights / weights.sum()
+
+    def apply(self, frame):
+        small = cv2.resize(frame, self.sample_size, interpolation=cv2.INTER_AREA)
+        exposure = np.zeros(small.shape, np.float32)
+        for weight, (coords, fractions) in zip(self.weights, self.rays):
+            sample = cv2.remap(
+                small,
+                coords,
+                fractions,
+                cv2.INTER_LINEAR,
+                borderMode=cv2.BORDER_REPLICATE,
+            )
+            exposure += weight * sample
+        blurred = cv2.resize(exposure, self.size, interpolation=cv2.INTER_CUBIC)
+        return np.rint(np.clip(frame + (blurred - frame) * self.mask, 0, 255)).astype(
+            np.uint8
+        )
 
 
 def compose(frame, size, anchor, zoom, fill, target):

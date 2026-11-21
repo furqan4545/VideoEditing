@@ -12,7 +12,7 @@ Every skill lives in `.agents/skills/<skill-name>/SKILL.md`.
 |---|---|
 | `agent-reach` | Search and read YouTube (video info, subtitles, transcripts), GitHub, web pages and more. Command: `agent-reach` |
 | `video-watch` | Download a video (any yt-dlp site) or take a local file, then grab frames + timestamped subtitles so you can watch it. Script: `.agents/skills/video-watch/scripts/watch.py` |
-| `match-cut` | Turn dropped photos or footage into fast match cuts on Ali’s softened, double-speed camera shutter. Align a common shape or face, or match action across different scenes and distant source times. Runner: `.agents/skills/match-cut/scripts/match-cut`. |
+| `match-cut` | Cut photos or footage on Ali’s softened 2× camera shutter, one new picture per click. Keep framing fixed and apply radial warp blur in the four corners. Photo edits default to 10 seconds. Run `.agents/skills/match-cut/scripts/match-cut`. |
 | `earshot` | Hear sound you can't: describe, match, find moments, check sync to picture, critique a film's audio, make sound effects. Command: `earshot` |
 | `real-sound` | Full soundtrack process for a video from real licensed recordings: cue list, sourcing, mix, QA, mastering, credits, mux. Uses earshot. |
 | `voicestudio` | Local voiceovers with emotion (VoxCPM2), voice cloning and design, transcription and dubbing in 600+ languages (OmniVoice). Talks to the VoiceStudio app at `localhost:3900` (REST or MCP). Personal use only. |
@@ -55,7 +55,8 @@ on purpose (media never goes in git). New takes with a set length, peak time or 
 
 - Downloaded videos and audio go in `downloads/`, which git ignores. Never commit media files.
 - Update Agent Reach with `AGENT_REACH_LANG=en agent-reach update` so its skill stays in English.
-- Every video gets subtle camera motion: a slow zoom in and out (about 1.00 to 1.045, turning at each beat, a little
+- Match cuts use fixed framing throughout each shot. The warp blur stays in the four corners, and footage keeps its recorded motion.
+- Other video styles get subtle camera motion: a slow zoom in and out (about 1.00 to 1.045, turning at each beat, a little
   further on the punchline) on the picture, so the frame is always changing. Captions and titles stay still, and
   the zoom never goes below 1.0, so no edge shows.
 - Every video that teaches a tool shows it working. One real demo is recorded on this Mac and put in the video: the

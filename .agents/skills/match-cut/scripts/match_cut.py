@@ -6,7 +6,8 @@ import json
 import math
 import subprocess
 import tempfile
-from contextlib import ExitStack
+from contextlib import ExitStack, closing
+from itertools import repeat
 from pathlib import Path
 
 import cv2
@@ -15,8 +16,10 @@ from picture import (
     AUDIO,
     IMAGES,
     VIDEOS,
+    CornerWarp,
     compare,
     compose,
+    fixed_crop,
     probe,
     read_image,
     resized_size,
@@ -264,10 +267,20 @@ def make_plan(args, tmp):
             "Several sound files were dropped. Use --shutter to choose the effect."
         )
     sources = []
+    seen_photos = set()
     for path in paths:
         print("Analyzing", path.name, flush=True)
-        sources.append(scan(path, args.motif))
+        source = scan(path, args.motif)
+        if source.still:
+            key = (source.size, source.photo_digest)
+            if key in seen_photos:
+                print("Skipping duplicate picture:", path.name, flush=True)
+                continue
+            seen_photos.add(key)
+        sources.append(source)
     single = len(sources) == 1
+    if single and sources[0].still:
+        raise ValueError("Give me at least two visually different pictures.")
     if single and all(
         np.array_equal(s.color, sources[0].samples[0].color)
         and np.array_equal(s.layout, sources[0].samples[0].layout)
@@ -276,7 +289,10 @@ def make_plan(args, tmp):
         raise ValueError(
             "The sampled pictures are identical. Add another shot or a take with movement."
         )
+    photos_only = all(src.still for src in sources)
     duration = args.duration
+    if duration is None and photos_only and not args.audio:
+        duration = 10.0
     if duration is not None and (not math.isfinite(duration) or duration <= 0):
         raise ValueError("Duration must be positive.")
     if args.audio_start < 0 or not math.isfinite(args.audio_start):
@@ -314,10 +330,10 @@ def make_plan(args, tmp):
             .expanduser()
             .resolve()
         )
-        audio.update(shutter=str(path), filter=SHUTTER_FILTER)
+        audio.update(shutter=str(path), filter=SHUTTER_FILTER, shutter_mode="per-shot")
         if single and duration is None:
             duration = min(2.6, sources[0].duration * 0.36)
-        min_frames = 5 if single and args.pace != "burst" else 2
+        min_frames = 5 if args.pace == "fast" and (single or photos_only) else 2
         marks, frames = shutter_schedule(
             audio, None if single else len(sources), duration, fps, min_frames
         )
@@ -326,10 +342,15 @@ def make_plan(args, tmp):
     except InsufficientWindows:
         if not single or len(marks) < 4:
             raise
-        # Holding through alternate shutter clicks still lands every new picture on an attack.
+        # Fewer feasible excerpts also means fewer shutter sounds in the finished mix.
         shots = select_shots(
             sources, marks[::2], frames, args.keep_order, args.motif, fps
         )
+    if audio.get("shutter_mode") == "per-shot":
+        for shot in shots:
+            # Keep the sampled clack independent of its placement during plan revisions.
+            shot["shutter_source_seconds"] = shot["cue_seconds"]
+            shot["cue_seconds"] = shot["timeline_frame"] / fps
     aspect = {"portrait": 9 / 16, "landscape": 16 / 9, "square": 1}.get(
         args.aspect, sources[0].size[0] / sources[0].size[1]
     )
@@ -338,6 +359,7 @@ def make_plan(args, tmp):
     return {
         "fps": fps,
         "size": size,
+        "picture_style": "locked-corners",
         "target": [0.5, 0.5],
         "fill": 0.74,
         "audio": audio,
@@ -364,6 +386,41 @@ def review_sheets(join_frames, directory):
         sheet.save(directory / f"joins-{k // rows + 1:02}.jpg", quality=89)
 
 
+def shot_pictures(shot, plan, warp):
+    size = tuple(plan["size"])
+    count = shot["frames"]
+    anchor = shot.get("anchor")
+    target = plan["target"]
+    with ExitStack() as stack:
+        if shot["still"]:
+            base = read_image(shot["source"])
+            if warp is not None:
+                picture = warp.apply(fixed_crop(base, size, anchor, target))
+                yield from repeat(picture, count)
+                return
+            frames = repeat(base, count)
+        else:
+            decode_size = resized_size(*shot["source_size"], max(size) * 1.5)
+            frames = stack.enter_context(
+                video_frames(
+                    shot["source"], shot["in_seconds"], plan["fps"], decode_size, count
+                )
+            )
+        for j in range(count):
+            base = next(frames, None)
+            if base is None:
+                raise ValueError(
+                    f"Source ends before requested frame: {shot['source']} at {shot['in_seconds']}s"
+                )
+            if warp is not None:
+                yield warp.apply(fixed_crop(base, size, anchor, target))
+            else:
+                # Unversioned plans replay the camera movement used by the original renderer.
+                phase = (shot["timeline_frame"] + j) / plan["fps"]
+                zoom = 1 + 0.0225 * (1 - math.cos(phase * math.pi / 0.52))
+                yield compose(base, size, anchor, zoom, plan["fill"], target)
+
+
 def render(plan, directory):
     fps = plan["fps"]
     size = tuple(plan["size"])
@@ -374,7 +431,10 @@ def render(plan, directory):
     elapsed = 0
     for shot in shots:
         shot["timeline_frame"] = elapsed
+        if plan["audio"].get("shutter_mode") == "per-shot":
+            shot["cue_seconds"] = elapsed / fps
         elapsed += shot["frames"]
+    warp = CornerWarp(size) if plan.get("picture_style") == "locked-corners" else None
     soundtrack(plan, directory / "mix.wav")
     cmd = [
         "ffmpeg",
@@ -419,35 +479,9 @@ def render(plan, directory):
     try:
         for shot in shots:
             count = shot["frames"]
-            with ExitStack() as stack:
-                if shot["still"]:
-                    base = read_image(shot["source"])
-                    frames = (base for _ in range(count))
-                else:
-                    decode_size = resized_size(*shot["source_size"], max(size) * 1.5)
-                    frames = stack.enter_context(
-                        video_frames(
-                            shot["source"], shot["in_seconds"], fps, decode_size, count
-                        )
-                    )
+            with closing(shot_pictures(shot, plan, warp)) as pictures:
                 ends = {}
-                for j in range(count):
-                    base = next(frames, None)
-                    if base is None:
-                        raise ValueError(
-                            f"Source ends before requested frame: {shot['source']} at {shot['in_seconds']}s"
-                        )
-                    # A continuous, sub-pixel drift through the edits; never reset zoom at a join.
-                    phase = (shot["timeline_frame"] + j) / fps
-                    zoom = 1 + 0.0225 * (1 - math.cos(phase * math.pi / 0.52))
-                    pic = compose(
-                        base,
-                        size,
-                        shot.get("anchor"),
-                        zoom,
-                        plan["fill"],
-                        plan["target"],
-                    )
+                for j, pic in enumerate(pictures):
                     proc.stdin.write(pic.tobytes())
                     if j in (0, 1, count - 2, count - 1):
                         ends[j] = cv2.resize(
@@ -490,7 +524,11 @@ def main():
     )
     mode.add_argument("--audio", help="Explicit continuous soundtrack override")
     p.add_argument("--audio-start", type=float, default=0)
-    p.add_argument("--duration", type=float, help="Output length in seconds")
+    p.add_argument(
+        "--duration",
+        type=float,
+        help="Output length in seconds (shutter photo edits default to 10)",
+    )
     p.add_argument(
         "--aspect",
         choices=["source", "portrait", "landscape", "square"],

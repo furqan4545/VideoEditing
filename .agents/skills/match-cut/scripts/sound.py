@@ -151,6 +151,26 @@ def shutter_schedule(audio, count, duration, fps, min_frames):
     else:
         frames = round(duration * fps)
         marks = [m for m in marks if m[0] <= frames - 2]
+        if count is not None and audio.get("shutter_mode") == "per-shot":
+            if frames < 2 * count:
+                raise ValueError(
+                    "Allow at least two frames per picture or select fewer inputs."
+                )
+            # Give the closing picture a full beat when the requested duration allows it.
+            spaced = [m for m in marks if m[0] <= frames - frames // count]
+            if len(spaced) >= count:
+                marks = spaced
+            elif len(marks) < count:
+                # The shutter is sampled per shot. A dense selection can reuse individual
+                # strokes at new times without playing any of the intervening recording.
+                return [
+                    (
+                        i * frames // count,
+                        "shutter",
+                        float(attacks[i % len(attacks)] / RATE),
+                    )
+                    for i in range(count)
+                ], frames
         if len(marks) < needed:
             raise ValueError(
                 "Too few shutter attacks for these pictures in the requested duration."
@@ -255,6 +275,28 @@ def stereo_fade(data, fade_in, fade_out):
                 data[:count] *= ramp
 
 
+def shutter_hit(cycle, source_seconds, max_samples):
+    """Take a single mechanical stroke, ending its tail before the shutter returns."""
+    at = round(source_seconds * RATE) % len(cycle)
+    hit = cycle[at : at + round(0.043 * RATE)]
+    envelope = np.max(np.abs(hit), axis=1)
+    strength = envelope[: round(0.017 * RATE)].max()
+    if strength < 1e-5:
+        raise ValueError("No shutter attack at the saved sample position.")
+    stop = min(len(hit), round(0.033 * RATE), max_samples)
+    quiet_length = round(0.0037 * RATE)
+    if len(hit) >= quiet_length:
+        quiet = (envelope < strength * 0.09).astype(np.int32)
+        quiet_runs = np.convolve(quiet, np.ones(quiet_length, np.int32), "valid")
+        releases = np.flatnonzero(quiet_runs == quiet_length)
+        releases = releases[releases >= round(0.009 * RATE)]
+        if len(releases):
+            stop = min(stop, int(releases[0]) + quiet_length)
+    hit = hit[:stop].copy()
+    stereo_fade(hit, 8, round(0.0035 * RATE))
+    return hit
+
+
 def soundtrack(plan, output):
     fps, shots = plan["fps"], plan["shots"]
     length = round(sum(s["frames"] for s in shots) / fps * RATE)
@@ -264,9 +306,17 @@ def soundtrack(plan, output):
         cycle = processed_shutter(audio)[audio["trim_samples"] :]
         if not len(cycle):
             raise ValueError("Shutter source changed since planning.")
-        for start in range(0, length, len(cycle)):
-            n = min(len(cycle), length - start)
-            mix[start : start + n] = cycle[:n]
+        if audio.get("shutter_mode") == "per-shot":
+            for shot in shots:
+                start = round(shot["timeline_frame"] * RATE / fps)
+                # Leave a release gap even for two-frame cuts in a dense burst.
+                max_samples = max(1, round(shot["frames"] * RATE / (2 * fps)))
+                hit = shutter_hit(cycle, shot["shutter_source_seconds"], max_samples)
+                mix[start : start + len(hit)] = hit
+        else:
+            for start in range(0, length, len(cycle)):
+                n = min(len(cycle), length - start)
+                mix[start : start + n] = cycle[:n]
     elif audio["bed"]:
         bed = decode(audio["bed"], length / RATE, audio["offset"])
         if len(bed) < length - RATE / fps:
@@ -304,7 +354,8 @@ def soundtrack(plan, output):
                 max(round(0.012 * RATE), len(sound) - round(duration * RATE)),
             )
             mix[start : start + len(sound)] += sound * (0.32 if audio["bed"] else 0.75)
-    stereo_fade(mix, 48, round(min(0.065, length / RATE / 8) * RATE))
+    if audio.get("shutter_mode") != "per-shot" or audio["location_sound"]:
+        stereo_fade(mix, 48, round(min(0.065, length / RATE / 8) * RATE))
     peak = np.max(abs(mix))
     if peak > 0.89:
         mix *= 0.89 / peak
