@@ -13,6 +13,7 @@ Every skill lives in `.agents/skills/<skill-name>/SKILL.md`.
 | `agent-reach` | Search and read YouTube (video info, subtitles, transcripts), GitHub, web pages and more. Command: `agent-reach` |
 | `video-watch` | Download a video (any yt-dlp site) or take a local file, then grab frames + timestamped subtitles so you can watch it. Script: `.agents/skills/video-watch/scripts/watch.py` |
 | `match-cut` | Cut photos or footage on the approved opening shutter, looped at 10 clicks per second. One picture per click, fixed framing and radial blur in all four corners. Photo edits default to 10 seconds. Use `--shutter-speed 0.5` for half speed or `2` for double. Run `.agents/skills/match-cut/scripts/match-cut`. |
+| `slowmo_matchcut` | Match Cut V2. Recreate the 10.067-second Wasted loop with the original hook, moving portraits, a flash freeze, silhouette flicker, optical-flow slow motion and a cyan hold. Run `.agents/skills/slowmo_matchcut/scripts/slowmo-matchcut`. |
 | `earshot` | Hear sound you can't: describe, match, find moments, check sync to picture, critique a film's audio, make sound effects. Command: `earshot` |
 | `real-sound` | Full soundtrack process for a video from real licensed recordings: cue list, sourcing, mix, QA, mastering, credits, mux. Uses earshot. |
 | `voicestudio` | Local voiceovers with emotion (VoxCPM2), voice cloning and design, transcription and dubbing in 600+ languages (OmniVoice). Talks to the VoiceStudio app at `localhost:3900` (REST or MCP). Personal use only. |
@@ -55,6 +56,8 @@ on purpose (media never goes in git). New takes with a set length, peak time or 
 
 - Downloaded videos and audio go in `downloads/`, which git ignores. Never commit media files.
 - Update Agent Reach with `AGENT_REACH_LANG=en agent-reach update` so its skill stays in English.
+- Choose polished footage of Ali with a clear action, expression or pose. Scrub the full selected interval, including slow-motion handles. Exclude nose wiping or picking, face cleaning and other personal grooming from edits.
+- For slowmo_matchcut, use the named source folder for every clip and photo. Follow an establishing view with a hard cut to the same person in the same take. Then keep portraits tight and align the eyes and gaze direction across cuts.
 - Match cuts use fixed framing throughout each shot. The warp blur stays in the four corners, and footage keeps its recorded motion.
 - Other video styles get subtle camera motion: a slow zoom in and out (about 1.00 to 1.045, turning at each beat, a little
   further on the punchline) on the picture, so the frame is always changing. Captions and titles stay still, and
