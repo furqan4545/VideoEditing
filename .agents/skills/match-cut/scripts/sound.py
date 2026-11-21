@@ -1,7 +1,10 @@
 """Build a continuous soundtrack and put picture boundaries on measured audio events."""
 
+import hashlib
+import math
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +16,10 @@ sys.path.insert(0, str(SIBLINGS / "real-sfx" / "scripts"))
 import beats
 
 RATE = 48000
+CLICKS_PER_SECOND = 10
+REFERENCE_SHUTTER_SHA256 = (
+    "f12e69b22b92fe28cd2eb62ecc5cad061a8ba1cf7287b6151d6688b3c8ccb7f4"
+)
 
 
 def decode(path, seconds, start=0):
@@ -22,8 +29,7 @@ def decode(path, seconds, start=0):
             "-v",
             "error",
             "-nostdin",
-            "-ss",
-            str(start),
+            *(["-ss", str(start)] if start is not None else []),
             "-i",
             str(path),
             "-t",
@@ -297,12 +303,105 @@ def shutter_hit(cycle, source_seconds, max_samples):
     return hit
 
 
+def steady_schedule(speed, fps, duration, count):
+    """Derive every onset from the same clock; round only the picture boundary."""
+    if not math.isfinite(speed) or not 0 < speed <= fps / (2 * CLICKS_PER_SECOND):
+        raise ValueError(
+            f"Shutter speed must be positive and at most {fps / (2 * CLICKS_PER_SECOND):g}× at {fps} fps."
+        )
+    hz = CLICKS_PER_SECOND * speed
+    if duration is None:
+        frames = round(count * fps / hz)
+    else:
+        frames = round(duration * fps)
+        count = math.ceil(frames * hz / fps)
+    marks = []
+    for i in range(count):
+        seconds = i / hz
+        frame = round(seconds * fps)
+        if frame <= frames - 2:
+            marks.append((frame, "shutter", seconds))
+    if len(marks) < 2:
+        raise ValueError(
+            "This duration and shutter speed fit fewer than two pictures. Increase either value."
+        )
+    return marks, frames
+
+
+def opening_exposure(audio):
+    """Rebuild one exposure from the local recording, including the mechanical return."""
+    recording = processed_shutter(audio)
+    if not len(recording):
+        raise ValueError("No shutter samples at this audio offset.")
+    with Path(audio["shutter"]).open("rb") as source:
+        approved = (
+            audio["offset"] == 0
+            and hashlib.file_digest(source, "sha256").hexdigest()
+            == REFERENCE_SHUTTER_SHA256
+        )
+    if approved:
+        # The approved loop was lifted from the first AAC render. Recreate its
+        # original sample alignment, fades, PCM quantization and AAC priming.
+        master = recording[624 : 624 + 55 * RATE // 60].copy()
+        stereo_fade(master, 48, round(0.065 * RATE))
+        with tempfile.TemporaryDirectory() as tmp:
+            reference = Path(tmp) / "reference.m4a"
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-v",
+                    "error",
+                    "-f",
+                    "s16le",
+                    "-ar",
+                    str(RATE),
+                    "-ac",
+                    "2",
+                    "-i",
+                    "-",
+                    "-c:a",
+                    "aac",
+                    "-b:a",
+                    "192k",
+                    str(reference),
+                ],
+                input=(master * 32767).astype("<i2").tobytes(),
+                check=True,
+            )
+            # Seeking to zero skips AAC preroll on some FFmpeg builds.
+            opening = decode(reference, 0.1, start=None)
+    else:
+        envelope = np.max(np.abs(recording), axis=1)
+        active = np.flatnonzero(envelope >= max(0.0001, float(envelope.max()) * 0.06))
+        if not len(active):
+            raise ValueError("No audible shutter at this audio offset.")
+        opening = recording[active[0] : active[0] + RATE // CLICKS_PER_SECOND]
+
+    # Keep both parts of the exposure and finish in the quiet valley ahead of
+    # the next firing. Changing cadence changes the space between exposures.
+    low, high = round(0.059 * RATE), round(0.082 * RATE)
+    fade = round(0.004 * RATE)
+    end = len(opening)
+    if end >= low + fade:
+        power = (opening[low:high].astype(np.float64) ** 2).mean(axis=1)
+        end = low + int(np.argmin(np.convolve(power, np.ones(fade), "valid"))) + fade
+    hit = opening[:end].copy()
+    stereo_fade(hit, 0, fade)
+    return hit
+
+
 def soundtrack(plan, output):
     fps, shots = plan["fps"], plan["shots"]
     length = round(sum(s["frames"] for s in shots) / fps * RATE)
     mix = np.zeros((length, 2), np.float32)
     audio = plan["audio"]
-    if audio.get("shutter"):
+    if audio.get("shutter_mode") == "steady-loop":
+        hit = opening_exposure(audio)
+        for shot in shots:
+            start = round(shot["cue_seconds"] * RATE)
+            count = min(len(hit), length - start)
+            mix[start : start + count] += hit[:count]
+    elif audio.get("shutter"):
         cycle = processed_shutter(audio)[audio["trim_samples"] :]
         if not len(cycle):
             raise ValueError("Shutter source changed since planning.")
@@ -354,9 +453,15 @@ def soundtrack(plan, output):
                 max(round(0.012 * RATE), len(sound) - round(duration * RATE)),
             )
             mix[start : start + len(sound)] += sound * (0.32 if audio["bed"] else 0.75)
-    if audio.get("shutter_mode") != "per-shot" or audio["location_sound"]:
+    if (
+        audio.get("shutter_mode") not in ("per-shot", "steady-loop")
+        or audio["location_sound"]
+    ):
         stereo_fade(mix, 48, round(min(0.065, length / RATE / 8) * RATE))
     peak = np.max(abs(mix))
     if peak > 0.89:
         mix *= 0.89 / peak
-    wavfile.write(output, RATE, (np.clip(mix, -1, 1) * 32767).astype(np.int16))
+    if audio.get("shutter_mode") == "steady-loop":
+        wavfile.write(output, RATE, mix)
+    else:
+        wavfile.write(output, RATE, (np.clip(mix, -1, 1) * 32767).astype(np.int16))

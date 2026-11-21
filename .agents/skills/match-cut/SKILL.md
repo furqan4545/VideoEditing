@@ -1,11 +1,11 @@
 ---
 name: match-cut
-description: Turn photos or footage into fast match cuts with fixed framing, warp blur in all four corners, and one new picture per softened 2× shutter click. Match shapes, faces, or action across scenes.
+description: Turn photos or footage into match cuts on a steady camera-shutter loop. Use fixed framing, warp blur in all four corners, and one picture per click. Adjust the shutter and cut speed together when requested.
 ---
 
 # Match cut
 
-Deliver a playable MP4 from the user's photos, clips, or a mix of both. Shutter edits made entirely from photos default to 10 seconds at 60 fps. Honor a requested duration. The approved 10-second photo edit used 68 distinct pictures and 68 clicks. The number of pictures can vary with the material.
+Deliver a playable MP4 from the user's photos, clips, or a mix of both. By default, repeat the complete opening shutter from Ali's first photo edit at **10 clicks per second**. At 60 fps this puts a new picture on screen every six frames, at the same pace through the ending. Photo edits default to 10 seconds. Aim for 100 distinct pictures for that cut.
 
 Use one distinct picture or excerpt for each audible shutter click, including the opening picture. Hold the framing fixed between clicks. The warp-zoom look comes from a strong radial smear baked into all four corners. The center stays sharp and still. A video excerpt keeps its recorded motion. Use these defaults in every new match cut unless the user explicitly requests a change.
 
@@ -31,9 +31,22 @@ Run `scripts/match-cut` from **this skill's directory**, or call its installed p
   --aspect portrait -o downloads/match-cut/03
 ```
 
-- **Graphic matches.** Choose photos with a shared silhouette, eye line, or gesture and a visible change at each cut. Spread similar burst photos apart. Each distinct input contributes one shot. The runner skips copies with identical decoded pixels. Pick more distinct pictures for a denser edit at the same duration. Use `--motif circle` for disks and wheels, or `--motif face` for frontal faces. Automatic mode picks isolated silhouettes.
+### Change the speed
+
+Use `--shutter-speed MULTIPLIER` when the user asks to slow down or speed up the shutter. The cuts follow the same clock. Changing the spacing preserves the pitch, attack, and mechanical return of the sampled shutter.
+
+| Requested pace | Option | Clicks per second | Frames per photo at 60 fps |
+|---|---|---:|---:|
+| Half speed | `--shutter-speed 0.5` | 5 | 12 |
+| Approved default | `--shutter-speed 1` or omit | 10 | 6 |
+| One and a half speed | `--shutter-speed 1.5` | 15 | 4 |
+| Double speed | `--shutter-speed 2` | 20 | 3 |
+
+Other positive multipliers up to 3× also work. For fractional frame intervals, the audio stays on its exact clock and the picture lands on the nearest frame. The last partial exposure must fit at least two frames. Use `--duration` to set a different length. With fixed duration, a slower loop uses fewer pictures and a faster loop uses more. If the user asks for every photo exactly once, allow one tenth of a second per photo at 1× and divide that duration by the selected speed.
+
+- **Graphic matches.** Choose photos with a shared silhouette, eye line, or gesture and a visible change at each cut. Spread similar burst photos apart. The runner skips identical copies and uses the available set before cycling back when there are more clicks than pictures. Consecutive exposures always use different inputs in a multi-source edit. With extra pictures, `--keep-order` samples across the ordered selection. Use `--motif circle` for disks and wheels, or `--motif face` for frontal faces. Automatic mode picks isolated silhouettes.
 - **Action matches.** Inspect the whole video. Pick the same phase of a gesture, screen direction and point of action across different camera shots. The runner searches out of order and prefers early → late → middle for the first three. It records the source time, detected shot number and region in `edit.json`. With a single unbroken take, use separated portions of the take and identify them as time jumps. If a detected scene change turns out to be camera shake, move that excerpt to a distinct moment before delivering.
-- **Shutter timing.** The default recording is `~/Desktop/MY VIDEO EDITING STUFF/Ali_BG_MUSIC/camera_sfx/alexis_gaming_cam-camera-shutter-346101.mp3`. The runner doubles its tempo with pitch preserved, applies a −12 dB high shelf at 2.2 kHz and a 5.8 kHz low-pass, and isolates individual mechanical clicks. Exactly one click starts on the first frame of each shot. Holds are quiet after that click decays. Use `--pace burst` for closer attacks, or `--duration` for a specified run time.
+- **Shutter sound.** The default recording is `~/Desktop/MY VIDEO EDITING STUFF/Ali_BG_MUSIC/camera_sfx/alexis_gaming_cam-camera-shutter-346101.mp3`. The runner recreates the first edit's pitch-preserving 2× treatment, −12 dB high shelf at 2.2 kHz and 5.8 kHz low-pass. It takes the opening exposure with its return and quiet release, and repeats that same sound on every cut. The variable-speed tail of the source never enters the loop. The existing `--pace burst` option selects a 2× loop unless an explicit shutter speed is given.
 - **Sound choices.** Plain media drops use the shutter alone. `--shutter FILE` selects a replacement shutter recording. Use `--audio FILE` for an uninterrupted soundtrack or `--location-sound` for overlapping source audio only when the user explicitly requests that sound.
 - **Framing.** Default to the first input’s aspect ratio. Use `--aspect portrait`, `square`, or `landscape` when requested. Use a single crop at the scale needed to fill the canvas. Let the matched subject guide the crop. Keep its scale and position constant for the entire shot.
 

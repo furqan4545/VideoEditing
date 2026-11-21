@@ -33,8 +33,8 @@ from sound import (
     SHUTTER_FILTER,
     get_bed,
     schedule,
-    shutter_schedule,
     soundtrack,
+    steady_schedule,
 )
 
 
@@ -181,6 +181,7 @@ def action_starts(src, lengths, fps):
 def select_shots(sources, marks, end_frame, keep_order, motif, fps):
     single = len(sources) == 1
     remaining = list(sources)
+    used_windows = {}
     previous = None
     result = []
     boundaries = [m[0] for m in marks] + [end_frame]
@@ -189,16 +190,25 @@ def select_shots(sources, marks, end_frame, keep_order, motif, fps):
         end = boundaries[i + 1]
         length = (end - begin) / fps
         best = None
+        if not remaining:
+            remaining = list(sources)
         pool = (
             sources if single else (remaining[:1] if keep_order or not i else remaining)
         )
         for src in pool:
+            if not single and result and str(src.path) == result[-1]["source"]:
+                continue
             starts = (
                 [chosen[i]]
                 if single
                 else candidates(src, length, 0.0, src.duration, fps)
             )
             for t in starts:
+                if any(
+                    t < used_end - 1e-7 and t + length > used_start + 1e-7
+                    for used_start, used_end in used_windows.get(src.path, ())
+                ):
+                    continue
                 entry = src.at(t)
                 # Flow is measured from the preceding proxy frame. Use the first in-shot
                 # vector, never motion across a source edit.
@@ -218,6 +228,8 @@ def select_shots(sources, marks, end_frame, keep_order, motif, fps):
         _, src, t, entry, near, action = best
         if not single:
             remaining.remove(src)
+            if not src.still:
+                used_windows.setdefault(src.path, []).append((t, t + length))
         exit_sample = src.at(t + length - 1 / fps)
         box = entry.box if src.still else None
         if not src.still and (not single or motif != "auto"):
@@ -330,27 +342,42 @@ def make_plan(args, tmp):
             .expanduser()
             .resolve()
         )
-        audio.update(shutter=str(path), filter=SHUTTER_FILTER, shutter_mode="per-shot")
+        speed = (
+            args.shutter_speed
+            if args.shutter_speed is not None
+            else (2.0 if args.pace == "burst" else 1.0)
+        )
+        audio.update(
+            shutter=str(path),
+            filter=SHUTTER_FILTER,
+            shutter_mode="steady-loop",
+            shutter_speed=speed,
+        )
         if single and duration is None:
             duration = min(2.6, sources[0].duration * 0.36)
-        min_frames = 5 if args.pace == "fast" and (single or photos_only) else 2
-        marks, frames = shutter_schedule(
-            audio, None if single else len(sources), duration, fps, min_frames
-        )
-    try:
-        shots = select_shots(sources, marks, frames, args.keep_order, args.motif, fps)
-    except InsufficientWindows:
-        if not single or len(marks) < 4:
-            raise
-        # Fewer feasible excerpts also means fewer shutter sounds in the finished mix.
-        shots = select_shots(
-            sources, marks[::2], frames, args.keep_order, args.motif, fps
-        )
-    if audio.get("shutter_mode") == "per-shot":
-        for shot in shots:
-            # Keep the sampled clack independent of its placement during plan revisions.
-            shot["shutter_source_seconds"] = shot["cue_seconds"]
-            shot["cue_seconds"] = shot["timeline_frame"] / fps
+        marks, frames = steady_schedule(speed, fps, duration, len(sources))
+        if args.keep_order and len(sources) > len(marks):
+            indices = np.linspace(0, len(sources) - 1, len(marks)).round().astype(int)
+            sources = [sources[i] for i in indices]
+    while True:
+        try:
+            shots = select_shots(
+                sources, marks, frames, args.keep_order, args.motif, fps
+            )
+            break
+        except InsufficientWindows:
+            if not single or len(marks) < 4:
+                raise
+            if args.audio:
+                marks = marks[::2]
+            elif args.duration is None:
+                # Shorten an automatic action edit to the available distant moments.
+                # Every retained boundary keeps the requested cadence.
+                end = len(marks) // 2
+                frames = marks[end][0]
+                marks = marks[:end]
+            else:
+                raise
     aspect = {"portrait": 9 / 16, "landscape": 16 / 9, "square": 1}.get(
         args.aspect, sources[0].size[0] / sources[0].size[1]
     )
@@ -433,6 +460,12 @@ def render(plan, directory):
         shot["timeline_frame"] = elapsed
         if plan["audio"].get("shutter_mode") == "per-shot":
             shot["cue_seconds"] = elapsed / fps
+        elif plan["audio"].get("shutter_mode") == "steady-loop":
+            # Preserve a fractional-frame audio clock. A hand-retimed shot still
+            # takes its click with it when replaying the edited plan.
+            cue = shot["cue_seconds"]
+            if round(cue * fps) != elapsed:
+                shot["cue_seconds"] = elapsed / fps
         elapsed += shot["frames"]
     warp = CornerWarp(size) if plan.get("picture_style") == "locked-corners" else None
     soundtrack(plan, directory / "mix.wav")
@@ -468,7 +501,7 @@ def render(plan, directory):
         "-c:a",
         "aac",
         "-b:a",
-        "192k",
+        "256k" if plan["audio"].get("shutter_mode") == "steady-loop" else "192k",
         "-movflags",
         "+faststart",
         "-y",
@@ -523,6 +556,12 @@ def main():
         "--shutter", help="Camera-shutter SFX, softened and played at double tempo"
     )
     mode.add_argument("--audio", help="Explicit continuous soundtrack override")
+    p.add_argument(
+        "--shutter-speed",
+        type=float,
+        metavar="MULTIPLIER",
+        help="Shutter and cut rate relative to 10 clicks/sec (0.5 = slower, 1 = default, 2 = faster)",
+    )
     p.add_argument("--audio-start", type=float, default=0)
     p.add_argument(
         "--duration",
@@ -563,9 +602,18 @@ def main():
         p.error("Choose a new output directory to preserve the earlier render.")
     if args.long_edge < 64:
         p.error("--long-edge must be at least 64 pixels")
-    if args.from_plan and (args.audio or args.shutter or args.location_sound):
+    if args.audio and args.shutter_speed is not None:
         p.error(
-            "To choose a new sound, pass the original media. --from-plan replays the saved mix."
+            "--shutter-speed applies to the shutter soundtrack. Choose it or --audio."
+        )
+    if args.from_plan and (
+        args.audio
+        or args.shutter
+        or args.location_sound
+        or args.shutter_speed is not None
+    ):
+        p.error(
+            "To choose a new sound or shutter speed, pass the original media. --from-plan replays the saved timing and mix."
         )
     if args.from_plan and args.inputs:
         p.error("Use either drop inputs or --from-plan.")

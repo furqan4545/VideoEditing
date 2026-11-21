@@ -12,7 +12,7 @@ Every skill lives in `.agents/skills/<skill-name>/SKILL.md`.
 |---|---|
 | `agent-reach` | Search and read YouTube (video info, subtitles, transcripts), GitHub, web pages and more. Command: `agent-reach` |
 | `video-watch` | Download a video (any yt-dlp site) or take a local file, then grab frames + timestamped subtitles so you can watch it. Script: `.agents/skills/video-watch/scripts/watch.py` |
-| `match-cut` | Cut photos or footage on Ali’s softened 2× camera shutter, one new picture per click. Keep framing fixed and apply radial warp blur in the four corners. Photo edits default to 10 seconds. Run `.agents/skills/match-cut/scripts/match-cut`. |
+| `match-cut` | Cut photos or footage on the approved opening shutter, looped at 10 clicks per second. One picture per click, fixed framing and radial blur in all four corners. Photo edits default to 10 seconds. Use `--shutter-speed 0.5` for half speed or `2` for double. Run `.agents/skills/match-cut/scripts/match-cut`. |
 | `earshot` | Hear sound you can't: describe, match, find moments, check sync to picture, critique a film's audio, make sound effects. Command: `earshot` |
 | `real-sound` | Full soundtrack process for a video from real licensed recordings: cue list, sourcing, mix, QA, mastering, credits, mux. Uses earshot. |
 | `voicestudio` | Local voiceovers with emotion (VoxCPM2), voice cloning and design, transcription and dubbing in 600+ languages (OmniVoice). Talks to the VoiceStudio app at `localhost:3900` (REST or MCP). Personal use only. |
