@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
+exec "$HOME/.local/share/onetake/.venv/bin/python" -B "$(dirname "$0")/match_cut.py" "$@"
