@@ -30,6 +30,7 @@ Every skill lives in `.agents/skills/<skill-name>/SKILL.md`.
 | `talk-and-point` | Ali's "talk and point" reel (reel 31, "awesome editing style"): his talking take full frame ↔ animation scenes on white paper, every change a motion-blurred whip; his fingertip tracked with Apple Vision so the button or card appears where he points and flips when he taps; subtle zoom + sudden punch-ins; real posts piled behind his head; grey BEFORE that snaps to colour on "Now"; the tool's real UI rebuilt on paper. Built on `html-canvas-animation`. Start: `.agents/skills/talk-and-point/scripts/new_reel.sh downloads/reelN/full`. Reel 31 is the worked example. |
 | `funky-edit` | Ali's "funky edit" (reel 33, the Kubai icons reel): a faceless reel in a dark voxel room at night with a voxel host and the Claude block, every spoken word on screen as big moving type, whips inside a room and pixel-block wipes between rooms, the mechanism as a 3D drawing that swings round and comes apart, real screenshots and a recorded demo card (before / after), silent dog and cat meme stickers on the funny words, the Dr.pimp voice with a bro-style script, low music cut to the words and light real effects at one level (16 dB under the voice). Built on `paper3d`, rendered by its fast GPU renderer. Start: `.agents/skills/funky-edit/scripts/new_reel.sh downloads/reelN/full`. Reel 33 is the worked example. |
 | `insta_zoom_pw_story` | **Only when Ali asks for it by name; never the default story shape.** A script pattern from Hari Ganesh's "AI hears your password from your keyboard" reel: impossible-sounding claim → proof with one name and one number → "how it works and how you'd build one" → a thing the viewer knows → one tiny question (E key against R key) → four drawn steps → the name at the midpoint → why → build recipe → honest catch → close. Beat sheet with word limits, topic test, picture rules, the reference reel's breakdown, an example script. Checker: `.agents/skills/insta_zoom_pw_story/scripts/check_story.py script.md` |
+| `no-cut-edit` | **The default style for every edit of Ali's own video** (since 24 Nov 2026), unless he names another style. Built from two charles.zhengg reels (GPS / quasar, "How does sand think?"). One continuous take with no cuts and no transitions. Zoom OUT for the bigger picture, keep zooming IN while explaining, teach inside a dark cinematic 3D world. The voice calls each zoom ("Let's zoom in. Further."), with scale labels on screen. His face is home base: his room, with the same 3D object floating above his shoulder. He comes back at each new question; joins are pull-backs, push-ins, lean-ins or screen dives. The ending recaps the chain and lands on the opening frame. Built on `paper3d` with `kit/cine-dark.js`, rendered by its fast GPU renderer. Breakdown: `.agents/skills/no-cut-edit/references/breakdown.md`. |
 
 ## Saved voices
 
@@ -54,6 +55,12 @@ on purpose (media never goes in git). New takes with a set length, peak time or 
 
 ## Rules
 
+- **Default edit style: `no-cut-edit`.** When Ali gives his video, takes or a topic for an edit and does not name
+  another style, read `.agents/skills/no-cut-edit/SKILL.md` and make it that way. That means one continuous take with
+  no cuts or transitions, zoom out for the bigger picture, zoom in while explaining, a 3D world to teach in, and his
+  face as home base inside the take. Use another skill only when he names it (reel-edit, talk-and-point, funky-edit,
+  html-canvas-animation, white-paper paper3d, match-cut, slowmo_matchcut, insta_zoom_pw_story) or for ranking /
+  quick-fire reels.
 - Downloaded videos and audio go in `downloads/`, which git ignores. Never commit media files.
 - Update Agent Reach with `AGENT_REACH_LANG=en agent-reach update` so its skill stays in English.
 - Choose polished footage of Ali with a clear action, expression or pose. Scrub the full selected interval, including slow-motion handles. Exclude nose wiping or picking, face cleaning and other personal grooming from edits.
