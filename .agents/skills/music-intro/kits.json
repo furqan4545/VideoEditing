@@ -1,0 +1,32 @@
+{
+ "about": "Riser-and-whoosh kits for music-intro --style riser. Each layer: id = sfx-cloud catalog ID (or an absolute path), reverse = play it backwards (a whoosh reversed is a riser that peaks at its end), trim_to_peak = stop the sound right on its peak so the beat takes over, db = loudest 100 ms vs the music's loudest 100 ms in its first 2 s, peak_offset = seconds after the hit that the sound's peak lands (0 = on the beat). Rotate kits between videos (--kit 2) so the start never sounds the same twice.",
+ "kits": [
+  {
+   "name": "cinematic",
+   "note": "real recordings (Sonniss GDC 2024): reversed wind-gust whoosh as the riser, a low sci-fi pass as the deep whoosh, a fast whoosh on top",
+   "layers": {
+    "riser": {"id": "sonniss-gdc-2024/Rescopic Sound - Distinct Whooshes/WHSH_Airy-Whoosh Wind Gust 11_RSCPC_DW.wav", "reverse": true, "trim_to_peak": true, "db": -3},
+    "deep": {"id": "sonniss-gdc-2024/Chupapsound - Essential Scifi/WHOOSH PASS SF LOW.wav", "db": -5},
+    "mid": {"id": "sonniss-gdc-2024/Rescopic Sound - Distinct Whooshes/WHSH_Pure SciFi-Whoosh Fast 03_RSCPC_DW.wav", "db": -8}
+   }
+  },
+  {
+   "name": "ali-own",
+   "note": "Ali's own cinematic sounds: the epic whoosh reversed as the riser, the deep sub boom on the beat, woosh_1 on top",
+   "layers": {
+    "riser": {"id": "ali-own/cinematic-and-ui/dragon-studio-epic-whoosh-478371.mp3", "reverse": true, "trim_to_peak": true, "db": -3},
+    "deep": {"id": "ali-own/cinematic-and-ui/zenowaves-deep-sub-boom-627605.mp3", "db": -6},
+    "mid": {"id": "ali-own/cinematic-and-ui/woosh_1.mp3", "db": -8}
+   }
+  },
+  {
+   "name": "airy",
+   "note": "lighter, for calm music: reversed watery whoosh as the riser, the slow metal pass-by low, the epic whoosh on top",
+   "layers": {
+    "riser": {"id": "sonniss-gdc-2024/Rescopic Sound - Distinct Whooshes/WHSH_Watery-Whoosh FIzzy Fast 03_RSCPC_DW.wav", "reverse": true, "trim_to_peak": true, "db": -4},
+    "deep": {"id": "sonniss-gdc-2024/Chupapsound - Essential Scifi/WHOOSH PASS SF LOW.wav", "db": -8},
+    "mid": {"id": "ali-own/cinematic-and-ui/woosh_2.mp3", "db": -9}
+   }
+  }
+ ]
+}

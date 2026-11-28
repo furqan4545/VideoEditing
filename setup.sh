@@ -115,6 +115,15 @@ else
   echo "sfx-cloud: not connected to R2 yet. Run ./scripts/r2-connect.sh"
 fi
 
+# 10b. music-intro: start background music naturally (reversed end cut, stem cut, riser + whoosh, filter open).
+#      Runs with the sound-effects venv (step 7). The stem cut runs demucs (htdemucs) through uv on first use:
+#      torch + the model (~80 MB) download once into uv's / torch's caches.
+cat > "$HOME/.local/bin/music-intro" <<EOF
+#!/bin/bash
+exec "$SFX_VENV/bin/python" "$REPO/.agents/skills/music-intro/scripts/music_intro.py" "\$@"
+EOF
+chmod +x "$HOME/.local/bin/music-intro"
+
 # 11. HyperFrames: write HTML, render it to MP4 (heygen-com/hyperframes, Apache-2.0).
 #     The CLI version matches the four skills copied into .agents/skills (hyperframes, hyperframes-cli,
 #     hyperframes-registry, media-use, from tag v$HF_VERSION). To update, change HF_VERSION, re-copy those four
